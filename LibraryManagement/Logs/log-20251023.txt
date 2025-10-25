@@ -1,0 +1,20 @@
+2025-10-23 10:31:38.798 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-23 10:31:41.272 +03:00 [INF] HTTP GET /swagger başladı
+2025-10-23 10:31:41.294 +03:00 [INF] HTTP GET /swagger tamamlandı - Status: 301 - Süre: 24ms
+2025-10-23 10:31:41.323 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-23 10:31:41.507 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 184ms
+2025-10-23 10:31:41.542 +03:00 [INF] HTTP GET /swagger/swagger-ui-standalone-preset.js başladı
+2025-10-23 10:31:41.542 +03:00 [INF] HTTP GET /swagger/swagger-ui-bundle.js başladı
+2025-10-23 10:31:41.542 +03:00 [INF] HTTP GET /swagger/swagger-ui.css başladı
+2025-10-23 10:31:41.673 +03:00 [INF] HTTP GET /swagger/swagger-ui.css tamamlandı - Status: 200 - Süre: 130ms
+2025-10-23 10:31:41.675 +03:00 [INF] HTTP GET /swagger/swagger-ui-standalone-preset.js tamamlandı - Status: 200 - Süre: 132ms
+2025-10-23 10:31:41.856 +03:00 [INF] HTTP GET /swagger/swagger-ui-bundle.js tamamlandı - Status: 200 - Süre: 304ms
+2025-10-23 10:31:42.370 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-23 10:31:42.423 +03:00 [INF] HTTP GET /swagger/favicon-32x32.png başladı
+2025-10-23 10:31:42.429 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 58ms
+2025-10-23 10:31:42.468 +03:00 [INF] HTTP GET /swagger/favicon-32x32.png tamamlandı - Status: 200 - Süre: 45ms
+2025-10-23 17:39:44.886 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-23 17:39:47.871 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-23 17:39:47.993 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 126ms
+2025-10-23 17:39:48.624 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-23 17:39:48.652 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 27ms

@@ -1,0 +1,14 @@
+2025-10-25 12:38:33.249 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-25 12:38:36.501 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-25 12:38:36.616 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 119ms
+2025-10-25 12:38:36.990 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-25 12:38:37.031 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 40ms
+2025-10-25 13:03:49.506 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-25 13:03:52.691 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-25 13:03:52.721 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 3217ms
+2025-10-25 13:04:11.913 +03:00 [INF] HTTP GET /api/Loan başladı
+2025-10-25 13:04:12.106 +03:00 [INF] HTTP GET /api/Loan tamamlandı - Status: 200 - Süre: 192ms
+2025-10-25 13:04:20.428 +03:00 [INF] HTTP GET /api/Loan/my-history başladı
+2025-10-25 13:04:20.459 +03:00 [INF] HTTP GET /api/Loan/my-history tamamlandı - Status: 200 - Süre: 31ms
+2025-10-25 13:04:59.679 +03:00 [INF] HTTP GET /api/Book başladı
+2025-10-25 13:04:59.715 +03:00 [INF] HTTP GET /api/Book tamamlandı - Status: 200 - Süre: 35ms

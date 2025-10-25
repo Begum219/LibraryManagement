@@ -1,0 +1,501 @@
+2025-10-24 09:00:00.194 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 09:00:02.622 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:00:02.724 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 106ms
+2025-10-24 09:00:03.428 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:00:03.550 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 121ms
+2025-10-24 09:01:01.001 +03:00 [INF] HTTP POST /api/Auth/register başladı
+2025-10-24 09:01:02.903 +03:00 [INF] Yeni kullanıcı kaydedildi: begümcetinkaya344@gmail.com
+2025-10-24 09:01:02.921 +03:00 [INF] HTTP POST /api/Auth/register tamamlandı - Status: 200 - Süre: 1920ms
+2025-10-24 09:01:21.023 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 09:01:21.039 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 401 - Süre: 16ms
+2025-10-24 09:01:52.566 +03:00 [INF] HTTP POST /api/Auth/refresh-token başladı
+2025-10-24 09:01:52.744 +03:00 [ERR] Token yenileme hatası
+System.Exception: Geçersiz veya süresi dolmuş refresh token!
+   at Infrastructure.Services.AuthService.RefreshTokenAsync(RefreshTokenRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 143
+   at LibraryManagement.Controllers.AuthController.RefreshToken(RefreshTokenRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 75
+2025-10-24 09:01:52.791 +03:00 [INF] HTTP POST /api/Auth/refresh-token tamamlandı - Status: 400 - Süre: 225ms
+2025-10-24 09:04:17.110 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:04:17.450 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:04:17.452 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 341ms
+2025-10-24 09:05:04.627 +03:00 [INF] HTTP GET /api/Auth/me başladı
+2025-10-24 09:05:04.636 +03:00 [INF] HTTP GET /api/Auth/me tamamlandı - Status: 401 - Süre: 9ms
+2025-10-24 09:05:57.835 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 09:05:57.844 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 401 - Süre: 9ms
+2025-10-24 09:13:40.298 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 09:13:41.484 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:13:41.615 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 135ms
+2025-10-24 09:13:41.897 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:13:41.929 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 32ms
+2025-10-24 09:14:09.637 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:14:11.621 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:14:11.644 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2007ms
+2025-10-24 09:14:35.723 +03:00 [INF] HTTP GET /api/Auth/me başladı
+2025-10-24 09:14:35.796 +03:00 [INF] HTTP GET /api/Auth/me tamamlandı - Status: 200 - Süre: 73ms
+2025-10-24 09:16:17.997 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 09:16:18.613 +03:00 [INF] 2FA aktif edildi: UserId 1
+2025-10-24 09:16:18.617 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 620ms
+2025-10-24 09:18:21.926 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:18:22.247 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:18:22.249 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 324ms
+2025-10-24 09:18:48.716 +03:00 [INF] HTTP GET /api/Auth/me başladı
+2025-10-24 09:18:48.737 +03:00 [INF] HTTP GET /api/Auth/me tamamlandı - Status: 200 - Süre: 24ms
+2025-10-24 09:19:43.610 +03:00 [INF] HTTP POST /api/Auth/refresh-token başladı
+2025-10-24 09:19:43.655 +03:00 [INF] Token yenilendi
+2025-10-24 09:19:43.656 +03:00 [INF] HTTP POST /api/Auth/refresh-token tamamlandı - Status: 200 - Süre: 46ms
+2025-10-24 09:20:17.802 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:20:17.815 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 12ms
+2025-10-24 09:20:18.109 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:20:18.143 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 34ms
+2025-10-24 09:20:23.050 +03:00 [INF] HTTP GET /api/Auth/me başladı
+2025-10-24 09:20:23.067 +03:00 [INF] HTTP GET /api/Auth/me tamamlandı - Status: 401 - Süre: 17ms
+2025-10-24 09:20:51.361 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:20:51.513 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:20:51.515 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 154ms
+2025-10-24 09:33:17.312 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 09:33:18.582 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:33:18.732 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 156ms
+2025-10-24 09:33:19.063 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:33:19.100 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 36ms
+2025-10-24 09:33:45.948 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:33:47.854 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:33:47.879 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 1931ms
+2025-10-24 09:39:04.966 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 09:39:06.373 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:39:06.540 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 170ms
+2025-10-24 09:39:06.752 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:39:06.790 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 37ms
+2025-10-24 09:39:38.439 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:39:40.179 +03:00 [ERR] Giriş hatası: begumcetinkaya344@gmail.com
+System.Exception: Email veya şifre hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 86
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 09:39:40.250 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 1811ms
+2025-10-24 09:40:36.859 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:40:36.953 +03:00 [ERR] Giriş hatası: begumcetinkaya344@gmail.com
+System.Exception: Email veya şifre hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 86
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 09:40:36.956 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 130ms
+2025-10-24 09:41:08.015 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:41:08.568 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:41:08.643 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 627ms
+2025-10-24 09:41:44.182 +03:00 [INF] HTTP POST /api/Auth/register başladı
+2025-10-24 09:41:44.440 +03:00 [INF] Yeni kullanıcı kaydedildi: begüm@gmail.com
+2025-10-24 09:41:44.441 +03:00 [INF] HTTP POST /api/Auth/register tamamlandı - Status: 200 - Süre: 258ms
+2025-10-24 09:42:04.274 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:42:04.420 +03:00 [INF] Kullanıcı giriş yaptı: begüm@gmail.com
+2025-10-24 09:42:04.421 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 146ms
+2025-10-24 09:52:18.941 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 09:52:20.422 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 09:52:20.558 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 140ms
+2025-10-24 09:52:20.925 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 09:52:21.016 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 91ms
+2025-10-24 09:52:59.273 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 09:53:01.222 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 09:53:01.245 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 1972ms
+2025-10-24 09:53:41.659 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 09:53:41.831 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 172ms
+2025-10-24 09:53:49.809 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 09:53:49.935 +03:00 [INF] 2FA aktif edildi: UserId 1
+2025-10-24 09:53:49.938 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 128ms
+2025-10-24 09:54:51.861 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 09:54:51.879 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 17ms
+2025-10-24 09:55:10.290 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 09:55:10.311 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 20ms
+2025-10-24 10:15:15.562 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 10:15:17.382 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 10:15:17.535 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 161ms
+2025-10-24 10:15:17.975 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 10:15:18.102 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 127ms
+2025-10-24 10:15:32.038 +03:00 [INF] HTTP POST /api/Auth/test-2fa başladı
+2025-10-24 10:15:32.157 +03:00 [INF] HTTP POST /api/Auth/test-2fa tamamlandı - Status: 401 - Süre: 119ms
+2025-10-24 10:17:31.314 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 10:17:33.761 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 10:17:33.788 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2474ms
+2025-10-24 10:17:58.529 +03:00 [INF] HTTP POST /api/Auth/test-2fa başladı
+2025-10-24 10:18:08.602 +03:00 [INF] HTTP POST /api/Auth/test-2fa tamamlandı - Status: 400 - Süre: 10072ms
+2025-10-24 10:18:56.987 +03:00 [INF] HTTP POST /api/Auth/disable-2fa başladı
+2025-10-24 10:18:57.109 +03:00 [INF] 2FA devre dışı bırakıldı: UserId 1
+2025-10-24 10:18:57.113 +03:00 [INF] HTTP POST /api/Auth/disable-2fa tamamlandı - Status: 200 - Süre: 126ms
+2025-10-24 10:19:09.651 +03:00 [INF] HTTP POST /api/Auth/test-2fa başladı
+2025-10-24 10:19:15.599 +03:00 [INF] HTTP POST /api/Auth/test-2fa tamamlandı - Status: 400 - Süre: 5948ms
+2025-10-24 10:19:20.330 +03:00 [INF] HTTP POST /api/Auth/test-2fa başladı
+2025-10-24 10:47:00.077 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 10:47:05.273 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 10:47:05.427 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 160ms
+2025-10-24 10:47:05.989 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 10:47:06.155 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 173ms
+2025-10-24 10:47:40.725 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 10:47:43.202 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 10:47:43.228 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2503ms
+2025-10-24 10:48:01.737 +03:00 [INF] HTTP GET /api/Book başladı
+2025-10-24 10:48:01.949 +03:00 [INF] HTTP GET /api/Book tamamlandı - Status: 200 - Süre: 213ms
+2025-10-24 10:48:58.252 +03:00 [INF] HTTP POST /api/Book başladı
+2025-10-24 10:48:58.271 +03:00 [INF] HTTP POST /api/Book tamamlandı - Status: 403 - Süre: 18ms
+2025-10-24 11:02:18.032 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 11:02:20.307 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 11:02:20.420 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 118ms
+2025-10-24 11:02:20.706 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 11:02:20.913 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 206ms
+2025-10-24 11:04:40.119 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 11:04:42.026 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 11:04:42.045 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 1926ms
+2025-10-24 11:04:59.736 +03:00 [INF] HTTP GET /api/Category başladı
+2025-10-24 11:04:59.834 +03:00 [INF] HTTP GET /api/Category tamamlandı - Status: 200 - Süre: 98ms
+2025-10-24 11:05:24.387 +03:00 [INF] HTTP GET /api/Category başladı
+2025-10-24 11:05:24.472 +03:00 [INF] HTTP GET /api/Category tamamlandı - Status: 200 - Süre: 84ms
+2025-10-24 11:15:23.913 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 11:15:26.424 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 11:15:26.518 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 96ms
+2025-10-24 11:15:26.947 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 11:15:26.993 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 46ms
+2025-10-24 11:16:18.462 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 11:16:20.409 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 11:16:20.427 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 1964ms
+2025-10-24 11:16:42.719 +03:00 [INF] HTTP GET /api/Loan başladı
+2025-10-24 11:16:42.807 +03:00 [INF] HTTP GET /api/Loan tamamlandı - Status: 403 - Süre: 87ms
+2025-10-24 13:11:06.749 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 13:11:09.158 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 13:11:09.272 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 116ms
+2025-10-24 13:11:09.700 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 13:11:09.768 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 68ms
+2025-10-24 13:14:22.661 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 13:14:24.926 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 13:14:24.955 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2294ms
+2025-10-24 13:15:22.146 +03:00 [INF] HTTP GET /api/User başladı
+2025-10-24 13:15:22.265 +03:00 [INF] HTTP GET /api/User tamamlandı - Status: 403 - Süre: 118ms
+2025-10-24 13:19:17.132 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 13:19:19.997 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 13:19:20.130 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 137ms
+2025-10-24 13:19:20.607 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 13:19:20.822 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 215ms
+2025-10-24 13:19:57.698 +03:00 [INF] HTTP POST /api/Auth/register başladı
+2025-10-24 13:19:59.696 +03:00 [INF] Yeni kullanıcı kaydedildi: string@gmail.com
+2025-10-24 13:19:59.715 +03:00 [INF] HTTP POST /api/Auth/register tamamlandı - Status: 200 - Süre: 2017ms
+2025-10-24 13:20:26.677 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 13:20:27.090 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 13:20:27.092 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 415ms
+2025-10-24 13:20:45.417 +03:00 [INF] HTTP GET /api/Category başladı
+2025-10-24 13:20:45.535 +03:00 [INF] HTTP GET /api/Category tamamlandı - Status: 200 - Süre: 117ms
+2025-10-24 13:20:50.961 +03:00 [INF] HTTP GET /api/User başladı
+2025-10-24 13:20:50.991 +03:00 [INF] HTTP GET /api/User tamamlandı - Status: 200 - Süre: 30ms
+2025-10-24 13:21:20.402 +03:00 [INF] HTTP GET /api/User/1 başladı
+2025-10-24 13:21:20.445 +03:00 [INF] HTTP GET /api/User/1 tamamlandı - Status: 200 - Süre: 42ms
+2025-10-24 13:21:38.135 +03:00 [INF] HTTP GET /api/User/2 başladı
+2025-10-24 13:21:38.147 +03:00 [INF] HTTP GET /api/User/2 tamamlandı - Status: 200 - Süre: 13ms
+2025-10-24 13:21:47.326 +03:00 [INF] HTTP GET /api/User/3 başladı
+2025-10-24 13:21:47.337 +03:00 [INF] HTTP GET /api/User/3 tamamlandı - Status: 200 - Süre: 10ms
+2025-10-24 13:21:59.840 +03:00 [INF] HTTP GET /api/User/me başladı
+2025-10-24 13:21:59.855 +03:00 [INF] HTTP GET /api/User/me tamamlandı - Status: 200 - Süre: 15ms
+2025-10-24 13:32:06.839 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 13:32:08.323 +03:00 [INF] 2FA aktif edildi: UserId 3
+2025-10-24 13:32:08.339 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 1500ms
+2025-10-24 13:34:18.791 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 13:34:18.861 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 69ms
+2025-10-24 13:34:48.758 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 13:34:48.777 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 18ms
+2025-10-24 13:35:01.955 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 13:35:01.968 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 12ms
+2025-10-24 13:35:23.561 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 13:35:23.585 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 23ms
+2025-10-24 13:38:24.161 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 13:38:28.837 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 13:38:28.935 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 103ms
+2025-10-24 13:38:29.231 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 13:38:29.263 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 31ms
+2025-10-24 13:39:45.655 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 13:39:48.517 +03:00 [INF] Kullanıcı giriş yaptı: begümcetinkaya344@gmail.com
+2025-10-24 13:39:48.535 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2880ms
+2025-10-24 13:41:43.267 +03:00 [INF] HTTP POST /api/Auth/register başladı
+2025-10-24 13:41:43.711 +03:00 [INF] Yeni kullanıcı kaydedildi: gamze@gmail.com
+2025-10-24 13:41:43.714 +03:00 [INF] HTTP POST /api/Auth/register tamamlandı - Status: 200 - Süre: 447ms
+2025-10-24 13:42:08.421 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 13:42:08.448 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 401 - Süre: 27ms
+2025-10-24 13:43:05.437 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 13:43:05.675 +03:00 [INF] 2FA aktif edildi: UserId 1
+2025-10-24 13:43:05.678 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 241ms
+2025-10-24 13:45:11.003 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 13:45:11.081 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 77ms
+2025-10-24 13:57:28.186 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 13:57:31.032 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 13:57:31.228 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 201ms
+2025-10-24 13:57:31.594 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 13:57:31.709 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 114ms
+2025-10-24 13:57:56.196 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 13:57:58.337 +03:00 [INF] Kullanıcı giriş yaptı: gamze@gmail.com
+2025-10-24 13:57:58.364 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2167ms
+2025-10-24 13:59:56.735 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 13:59:57.175 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 107
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 13:59:57.226 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 491ms
+2025-10-24 14:00:19.873 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:00:20.089 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 107
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:00:20.095 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 223ms
+2025-10-24 14:00:22.707 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:00:22.896 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 107
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:00:22.901 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 193ms
+2025-10-24 14:00:52.084 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:00:52.271 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 107
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:00:52.275 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 190ms
+2025-10-24 14:02:23.119 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:02:23.277 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 14:02:23.279 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 160ms
+2025-10-24 14:02:35.272 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:02:35.414 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 14:02:35.415 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 142ms
+2025-10-24 14:03:02.171 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:03:02.322 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 14:03:02.324 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 153ms
+2025-10-24 14:19:31.702 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:19:32.015 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 14:19:32.021 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 321ms
+2025-10-24 14:28:07.233 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 14:28:09.643 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 14:28:09.737 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 98ms
+2025-10-24 14:28:10.054 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 14:28:10.262 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 208ms
+2025-10-24 14:28:48.671 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:28:50.506 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:28:50.568 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 1897ms
+2025-10-24 14:30:41.229 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:30:41.620 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:30:41.625 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 395ms
+2025-10-24 14:30:59.392 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:30:59.598 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:30:59.602 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 209ms
+2025-10-24 14:31:03.067 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:31:03.256 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:31:03.259 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 191ms
+2025-10-24 14:31:17.259 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:31:17.435 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:31:17.438 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 179ms
+2025-10-24 14:31:44.666 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:31:44.869 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:31:44.872 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 205ms
+2025-10-24 14:31:48.341 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:31:48.529 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:31:48.532 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 190ms
+2025-10-24 14:32:10.419 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:32:10.629 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:32:10.631 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 211ms
+2025-10-24 14:32:28.602 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:32:28.771 +03:00 [ERR] Giriş hatası: begümcetinkaya344@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 14:32:28.774 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 171ms
+2025-10-24 14:33:01.683 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 14:33:01.702 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 19ms
+2025-10-24 14:33:01.974 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 14:33:02.001 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 27ms
+2025-10-24 14:33:19.394 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:33:19.683 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 14:33:19.696 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 302ms
+2025-10-24 14:33:52.630 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 14:33:52.851 +03:00 [INF] 2FA aktif edildi: UserId 3
+2025-10-24 14:33:52.855 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 225ms
+2025-10-24 14:34:12.207 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:34:12.232 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 24ms
+2025-10-24 14:35:17.966 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:17.979 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 13ms
+2025-10-24 14:35:22.811 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:22.825 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 14ms
+2025-10-24 14:35:23.413 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:23.424 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 11ms
+2025-10-24 14:35:23.585 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:23.595 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 9ms
+2025-10-24 14:35:23.771 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:23.782 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 11ms
+2025-10-24 14:35:23.932 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:23.942 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 10ms
+2025-10-24 14:35:24.101 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.111 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 9ms
+2025-10-24 14:35:24.269 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.276 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:35:24.441 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.459 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 17ms
+2025-10-24 14:35:24.607 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.614 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:35:24.792 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.800 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 8ms
+2025-10-24 14:35:24.978 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:24.987 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 9ms
+2025-10-24 14:35:25.140 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:25.150 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 10ms
+2025-10-24 14:35:25.315 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:25.323 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:35:26.000 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.018 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 18ms
+2025-10-24 14:35:26.193 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.202 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 8ms
+2025-10-24 14:35:26.378 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.390 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 12ms
+2025-10-24 14:35:26.570 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.578 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:35:26.764 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.777 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 13ms
+2025-10-24 14:35:26.967 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:26.976 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 9ms
+2025-10-24 14:35:27.151 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:27.159 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:35:27.351 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:27.360 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 8ms
+2025-10-24 14:35:27.544 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 14:35:27.552 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 7ms
+2025-10-24 14:58:39.856 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 14:58:42.763 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 14:58:42.843 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 82ms
+2025-10-24 14:58:43.102 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 14:58:43.129 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 27ms
+2025-10-24 14:59:39.548 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 14:59:41.367 +03:00 [INF] Kullanıcı giriş yaptı: gamze@gmail.com
+2025-10-24 14:59:41.390 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 1841ms
+2025-10-24 15:00:13.394 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 15:00:13.646 +03:00 [INF] 2FA aktif edildi: UserId 4
+2025-10-24 15:00:13.649 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 255ms
+2025-10-24 15:00:22.255 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:00:22.293 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 37ms
+2025-10-24 15:06:03.483 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 15:06:03.500 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 16ms
+2025-10-24 15:06:03.799 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 15:06:03.829 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 29ms
+2025-10-24 15:22:42.856 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 15:22:46.683 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 15:22:46.826 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 146ms
+2025-10-24 15:22:47.086 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 15:22:47.145 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 58ms
+2025-10-24 15:23:15.067 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 15:23:17.162 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 15:23:17.181 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2113ms
+2025-10-24 15:24:20.246 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 15:24:20.529 +03:00 [INF] 2FA aktif edildi: UserId 3
+2025-10-24 15:24:20.533 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 287ms
+2025-10-24 15:24:39.414 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 15:24:39.760 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 15:24:39.762 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 347ms
+2025-10-24 15:25:40.089 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:25:40.125 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 36ms
+2025-10-24 15:30:38.678 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 15:30:41.351 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 15:30:41.481 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 133ms
+2025-10-24 15:30:42.052 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 15:30:42.132 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 79ms
+2025-10-24 15:31:21.083 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 15:31:23.132 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 15:31:23.158 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2074ms
+2025-10-24 15:31:38.054 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 15:32:02.655 +03:00 [INF] 2FA aktif edildi: UserId 3
+2025-10-24 15:32:06.287 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 28233ms
+2025-10-24 15:32:58.314 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:33:32.603 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 34290ms
+2025-10-24 15:33:42.263 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:34:21.396 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 39133ms
+2025-10-24 15:34:35.128 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:34:35.161 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 32ms
+2025-10-24 15:34:46.054 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:34:46.073 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 400 - Süre: 18ms
+2025-10-24 15:35:06.977 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 15:35:11.323 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 15:35:11.419 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 99ms
+2025-10-24 15:35:11.779 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 15:35:11.812 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 32ms
+2025-10-24 15:35:37.798 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 15:58:18.100 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 15:58:21.287 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 15:58:21.386 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 102ms
+2025-10-24 15:58:21.689 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 15:58:21.748 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 59ms
+2025-10-24 15:58:44.684 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 15:58:46.672 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 15:58:46.699 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 2014ms
+2025-10-24 15:59:04.288 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 15:59:04.695 +03:00 [INF] 2FA aktif edildi: UserId 3
+2025-10-24 15:59:04.700 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 412ms
+2025-10-24 16:00:08.759 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 16:00:08.819 +03:00 [INF] 2FA doğrulandı ve aktifleştirildi: UserId 3
+2025-10-24 16:00:08.823 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 200 - Süre: 63ms
+2025-10-24 16:01:07.446 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:01:07.912 +03:00 [ERR] Giriş hatası: string@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 16:01:07.990 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 544ms
+2025-10-24 16:01:20.591 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:01:20.737 +03:00 [INF] Kullanıcı giriş yaptı: string@gmail.com
+2025-10-24 16:01:20.739 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 148ms
+2025-10-24 16:03:21.454 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 16:03:21.471 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 16ms
+2025-10-24 16:03:21.745 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 16:03:21.790 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 45ms
+2025-10-24 16:03:45.383 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:03:45.606 +03:00 [ERR] Giriş hatası: gamze@gmail.com
+System.Exception: Email veya şifre hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 78
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 16:03:45.610 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 226ms
+2025-10-24 16:03:54.745 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:03:54.900 +03:00 [INF] Kullanıcı giriş yaptı: gamze@gmail.com
+2025-10-24 16:03:54.902 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 157ms
+2025-10-24 16:04:29.409 +03:00 [INF] HTTP POST /api/Auth/enable-2fa başladı
+2025-10-24 16:04:29.439 +03:00 [INF] 2FA aktif edildi: UserId 4
+2025-10-24 16:04:29.441 +03:00 [INF] HTTP POST /api/Auth/enable-2fa tamamlandı - Status: 200 - Süre: 31ms
+2025-10-24 16:05:19.246 +03:00 [INF] HTTP POST /api/Auth/verify-2fa başladı
+2025-10-24 16:05:19.273 +03:00 [INF] 2FA doğrulandı ve aktifleştirildi: UserId 4
+2025-10-24 16:05:19.275 +03:00 [INF] HTTP POST /api/Auth/verify-2fa tamamlandı - Status: 200 - Süre: 28ms
+2025-10-24 16:05:31.564 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 16:05:31.568 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 3ms
+2025-10-24 16:05:31.830 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 16:05:31.848 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 17ms
+2025-10-24 16:05:56.063 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:05:56.287 +03:00 [ERR] Giriş hatası: gamze@gmail.com
+System.Exception: 2FA kodu hatalı!
+   at Infrastructure.Services.AuthService.LoginAsync(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\Infrastructure\Services\AuthService.cs:line 100
+   at LibraryManagement.Controllers.AuthController.Login(LoginRequestDto request) in C:\Users\w11\Desktop\kütüphane\LibraryManagement\Controllers\AuthController.cs:line 50
+2025-10-24 16:05:56.291 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 400 - Süre: 228ms
+2025-10-24 16:06:08.141 +03:00 [INF] HTTP POST /api/Auth/login başladı
+2025-10-24 16:06:08.287 +03:00 [INF] Kullanıcı giriş yaptı: gamze@gmail.com
+2025-10-24 16:06:08.289 +03:00 [INF] HTTP POST /api/Auth/login tamamlandı - Status: 200 - Süre: 147ms
+2025-10-24 17:54:29.566 +03:00 [INF] Uygulama başlatılıyor...
+2025-10-24 17:54:35.406 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 17:54:35.550 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 150ms
+2025-10-24 17:54:36.046 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 17:54:36.287 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 241ms
+2025-10-24 17:55:21.943 +03:00 [INF] HTTP GET /swagger/index.html başladı
+2025-10-24 17:55:21.951 +03:00 [INF] HTTP GET /swagger/index.html tamamlandı - Status: 200 - Süre: 8ms
+2025-10-24 17:55:22.261 +03:00 [INF] HTTP GET /swagger/v1/swagger.json başladı
+2025-10-24 17:55:22.296 +03:00 [INF] HTTP GET /swagger/v1/swagger.json tamamlandı - Status: 200 - Süre: 35ms
