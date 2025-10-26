@@ -1,4 +1,4 @@
-using Domain.Entities;
+ï»¿using Domain.Entities;
 using Infrastructure;
 using Infrastructure.Middlewares;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +9,19 @@ using System.Text;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+// âœ… GitHub Secrets iÃ§in Environment Variables
+var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("LibraryDB");
+
+var jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
+    ?? builder.Configuration["JwtSettings:SecretKey"];
+
+// Override configuration
+builder.Configuration["ConnectionStrings:LibraryDB"] = connectionString;
+builder.Configuration["JwtSettings:SecretKey"] = jwtSecretKey;
+
+// Serilog iÃ§in connection string override
+builder.Configuration["Serilog:WriteTo:2:Args:connectionString"] = connectionString;
 
 // Serilog Configuration
 Serilog.Log.Logger = new Serilog.LoggerConfiguration()
@@ -55,10 +68,10 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Library Management API",
         Version = "v1",
-        Description = "Kütüphane Yönetim Sistemi API"
+        Description = "KÃ¼tÃ¼phane YÃ¶netim Sistemi API"
     });
 
-    // JWT Authentication için Swagger yapýlandýrmasý
+    // JWT Authentication iÃ§in Swagger yapÄ±landÄ±rmasÄ±
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -66,7 +79,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header kullanarak giriþ yapýn. Örnek: 'Bearer {token}'"
+        Description = "JWT Authorization header kullanarak giriÅŸ yapÄ±n. Ã–rnek: 'Bearer {token}'"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -87,7 +100,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Middleware'ler ve sýralamasý önemli
+// Middleware'ler ve sÄ±ralamasÄ± Ã¶nemli
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -100,19 +113,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); // ÖNEMLÝ: Authorization'dan ÖNCE gelmeli
+app.UseAuthentication(); // Ã–NEMLÄ°: Authorization'dan Ã–NCE gelmeli
 app.UseAuthorization();
 
 app.MapControllers();
 
 try
 {
-    Serilog.Log.Information("Uygulama baþlatýlýyor...");
+    Serilog.Log.Information("Uygulama baÅŸlatÄ±lÄ±yor...");
     app.Run();
 }
 catch (Exception ex)
 {
-    Serilog.Log.Fatal(ex, "Uygulama baþlatýlamadý!");
+    Serilog.Log.Fatal(ex, "Uygulama baÅŸlatÄ±lamadÄ±!");
 }
 finally
 {
