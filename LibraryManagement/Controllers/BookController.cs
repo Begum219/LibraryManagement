@@ -1,4 +1,5 @@
 ﻿using LibraryManagement.Application.Interfaces.UnitOfWork;
+using LibraryManagement.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
@@ -11,24 +12,46 @@ namespace LibraryManagement.Controllers
     public class BookController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICacheService _cacheService;
         private readonly ILogger<BookController> _logger;
 
-        public BookController(IUnitOfWork unitOfWork, ILogger<BookController> logger)
+        public BookController(
+            IUnitOfWork unitOfWork,
+            ICacheService cacheService,
+            ILogger<BookController> logger)
         {
             _unitOfWork = unitOfWork;
+            _cacheService = cacheService;
             _logger = logger;
         }
 
         /// <summary>
-        /// Tüm kitapları listele
+        /// Tüm kitapları listele (CACHE'li)
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAllBooks()
         {
             try
             {
+                const string cacheKey = "books:all";
+
+                // ✅ Önce cache'e bak
+                var cachedBooks = await _cacheService.GetAsync<List<Book>>(cacheKey);
+
+                if (cachedBooks != null)
+                {
+                    _logger.LogInformation("Kitaplar cache'ten geldi");
+                    return Ok(new { success = true, data = cachedBooks, source = "cache" });
+                }
+
+                // ✅ Cache'te yoksa veritabanından getir
                 var books = await _unitOfWork.Books.GetAllAsync();
-                return Ok(new { success = true, data = books });
+
+                // ✅ Cache'e kaydet (10 dakika)
+                await _cacheService.SetAsync(cacheKey, books.ToList(), TimeSpan.FromMinutes(10));
+
+                _logger.LogInformation("Kitaplar veritabanından geldi ve cache'lendi");
+                return Ok(new { success = true, data = books, source = "database" });
             }
             catch (Exception ex)
             {
@@ -96,7 +119,7 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Yeni kitap ekle (Admin/Librarian)
+        /// Yeni kitap ekle (Admin/Librarian) - Cache temizleme ile
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpPost]
@@ -110,7 +133,10 @@ namespace LibraryManagement.Controllers
                 await _unitOfWork.Books.AddAsync(book);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Yeni kitap eklendi: {BookTitle}", book.Title);
+                // ✅ Cache'i temizle
+                await _cacheService.RemoveByPrefixAsync("books:");
+
+                _logger.LogInformation("Yeni kitap eklendi ve cache temizlendi: {BookTitle}", book.Title);
                 return Ok(new { success = true, data = book, message = "Kitap başarıyla eklendi" });
             }
             catch (Exception ex)
@@ -121,7 +147,7 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap güncelle (Admin/Librarian)
+        /// Kitap güncelle (Admin/Librarian) - Cache temizleme ile
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpPut("{id}")]
@@ -148,7 +174,10 @@ namespace LibraryManagement.Controllers
                 _unitOfWork.Books.Update(existingBook);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kitap güncellendi: {BookId}", id);
+                // ✅ Cache'i temizle
+                await _cacheService.RemoveByPrefixAsync("books:");
+
+                _logger.LogInformation("Kitap güncellendi ve cache temizlendi: {BookId}", id);
                 return Ok(new { success = true, data = existingBook, message = "Kitap başarıyla güncellendi" });
             }
             catch (Exception ex)
@@ -159,7 +188,7 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap sil (soft delete - Admin)
+        /// Kitap sil (soft delete - Admin) - Cache temizleme ile
         /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
@@ -179,7 +208,10 @@ namespace LibraryManagement.Controllers
                 _unitOfWork.Books.Update(book);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kitap silindi (soft delete): {BookId}", id);
+                // ✅ Cache'i temizle
+                await _cacheService.RemoveByPrefixAsync("books:");
+
+                _logger.LogInformation("Kitap silindi (soft delete) ve cache temizlendi: {BookId}", id);
                 return Ok(new { success = true, message = "Kitap başarıyla silindi" });
             }
             catch (Exception ex)

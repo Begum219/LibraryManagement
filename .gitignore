@@ -44,3 +44,4 @@ appsettings.Production.json
 # Database files
 *.mdf
 *.ldf
+**/Logs/*.txt

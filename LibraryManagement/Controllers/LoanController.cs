@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using System.Security.Claims;
+using LibraryManagement.Application.Interfaces.Services;
 
 namespace LibraryManagement.Controllers
 {
@@ -13,11 +14,12 @@ namespace LibraryManagement.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LoanController> _logger;
-
-        public LoanController(IUnitOfWork unitOfWork, ILogger<LoanController> logger)
+        private readonly ICacheService _cacheService;
+        public LoanController(IUnitOfWork unitOfWork, ILogger<LoanController> logger, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _cacheService = cacheService;
         }
 
         /// <summary>
@@ -37,6 +39,30 @@ namespace LibraryManagement.Controllers
                 _logger.LogError(ex, "Ödünç kayıtları listelenirken hata oluştu");
                 return BadRequest(new { success = false, message = ex.Message });
             }
+        }
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics()
+        {
+            const string cacheKey = "loans:statistics";
+
+            var cached = await _cacheService.GetAsync<object>(cacheKey);
+            if (cached != null)
+                return Ok(new { success = true, data = cached, source = "cache" });
+
+            // ✅ Önce tüm loan'ları çek
+            var allLoans = await _unitOfWork.Loans.GetAllAsync();
+
+            // ✅ Sonra istatistikleri hesapla
+            var stats = new
+            {
+                TotalLoans = allLoans.Count(),
+                ActiveLoans = allLoans.Count(l => l.IsReturned == false),
+                OverdueLoans = allLoans.Count(l => l.IsReturned == false && l.DueDate < DateTime.UtcNow)
+            };
+
+            await _cacheService.SetAsync(cacheKey, stats, TimeSpan.FromMinutes(5));
+
+            return Ok(new { success = true, data = stats, source = "database" });
         }
 
         /// <summary>

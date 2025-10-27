@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using System.Security.Claims;
 using BCrypt.Net;
+using LibraryManagement.Application.Interfaces.Services;
+using Infrastructure.Services;
 
 namespace LibraryManagement.Controllers
 {
@@ -14,11 +16,12 @@ namespace LibraryManagement.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UserController> _logger;
-
-        public UserController(IUnitOfWork unitOfWork, ILogger<UserController> logger)
+        private readonly ICacheService _cacheService;
+        public UserController(IUnitOfWork unitOfWork, ILogger<UserController> logger, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _cacheService = cacheService;  // ← ATAMA 
         }
 
         /// <summary>
@@ -95,6 +98,21 @@ namespace LibraryManagement.Controllers
                 _logger.LogError(ex, "Kullanıcı getirilirken hata oluştu: {UserId}", id);
                 return BadRequest(new { success = false, message = ex.Message });
             }
+        }
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var cacheKey = $"user:profile:{userId}";
+
+            var cached = await _cacheService.GetAsync<User>(cacheKey);
+            if (cached != null)
+                return Ok(new { success = true, data = cached, source = "cache" });
+
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            await _cacheService.SetAsync(cacheKey, user, TimeSpan.FromMinutes(30));
+
+            return Ok(new { success = true, data = user, source = "database" });
         }
 
         /// <summary>

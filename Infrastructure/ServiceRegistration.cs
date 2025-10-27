@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using LibraryManagement.Application.Interfaces.UnitOfWork;
+using StackExchange.Redis;
 
 namespace Infrastructure
 {
@@ -31,6 +32,20 @@ namespace Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITwoFactorService, TwoFactorService>();
+
+            // ✅ REDIS CACHE
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration.GetConnectionString("Redis")
+                    ?? "localhost:6379";
+                options.InstanceName = "LibraryManagement:";
+            });
+
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+                ConnectionMultiplexer.Connect(
+                    configuration.GetConnectionString("Redis") ?? "localhost:6379"));
+
+            services.AddScoped<ICacheService, CacheService>();
 
             return services;
         }

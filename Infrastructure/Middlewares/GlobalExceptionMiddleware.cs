@@ -19,6 +19,7 @@ namespace Infrastructure.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
+
             try
             {
                 await _next(context);
