@@ -2,6 +2,7 @@
 using LibraryManagement.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Domain.Entities;
 using System.Security.Claims;
 
@@ -224,6 +225,7 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kitap arama (title, author, isbn)
         /// </summary>
+        [EnableRateLimiting("search")]  // ← EKLENDI
         [HttpGet("search")]
         public async Task<IActionResult> SearchBooks([FromQuery] string query)
         {

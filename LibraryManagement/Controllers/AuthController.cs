@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using LibraryManagement.Application.Interfaces.UnitOfWork;
+using Microsoft.AspNetCore.RateLimiting;
+
 namespace LibraryManagement.Controllers
 {
     [ApiController]
@@ -14,15 +16,18 @@ namespace LibraryManagement.Controllers
         private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
         private readonly IUnitOfWork _unitOfWork;
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
+
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IUnitOfWork unitOfWork)
         {
             _authService = authService;
             _logger = logger;
+            _unitOfWork = unitOfWork;
         }
 
         /// <summary>
-        /// Kullanıcı kaydı
+        /// Yeni kullanıcı kaydı
         /// </summary>
+        [EnableRateLimiting("register")]  // ← EKLENDI
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
@@ -42,6 +47,7 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kullanıcı girişi
         /// </summary>
+        [EnableRateLimiting("login")]  // ← EKLENDI
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
