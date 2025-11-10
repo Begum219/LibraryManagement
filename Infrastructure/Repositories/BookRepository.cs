@@ -41,5 +41,20 @@ namespace Infrastructure.Repositories
             var book = await _context.Books.FindAsync(bookId);
             return book != null && book.AvailableCopies > 0 && book.IsActive == true;
         }
+       
+
+        public async Task<Book?> GetByPublicIdAsync(Guid publicId)
+        {
+            return await _context.Books
+                .FirstOrDefaultAsync(b => b.PublicId == publicId);
+        }
+
+        public async Task<Book?> GetBookWithDetailsByPublicIdAsync(Guid publicId)
+        {
+            return await _context.Books
+                .Include(b => b.Category)
+                .Include(b => b.Loans)
+                .FirstOrDefaultAsync(b => b.PublicId == publicId);
+        }
     }
 }

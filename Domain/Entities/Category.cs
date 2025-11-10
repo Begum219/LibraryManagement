@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Domain.Entities;
 
-public partial class Category
+public partial class Category : IEntity
 {
     public int Id { get; set; }
 
@@ -18,4 +18,11 @@ public partial class Category
     public bool? IsActive { get; set; }
 
     public virtual ICollection<Book> Books { get; set; } = new List<Book>();
+
+    // ✅ SOFT DELETE - BUNLAR VAR MI KONTROL ET
+    public Guid PublicId { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedDate { get; set; }
+    public int? DeletedBy { get; set; }
+    
 }

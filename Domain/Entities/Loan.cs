@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Domain.Entities;
 
-public partial class Loan
+public partial class Loan : IEntity  // : IEntity EKLEDİM
 {
     public int Id { get; set; }
 
@@ -27,7 +27,14 @@ public partial class Loan
 
     public bool? IsActive { get; set; }
 
+    public Guid PublicId { get; set; }
+
     public virtual Book? Book { get; set; }
 
     public virtual User? User { get; set; }
+    // ✅ SOFT DELETE 
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedDate { get; set; }
+    public int? DeletedBy { get; set; }
+   
 }

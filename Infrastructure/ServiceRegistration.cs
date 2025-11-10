@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using LibraryManagement.Application.Interfaces.UnitOfWork;
 using StackExchange.Redis;
+using Application.Interfaces.Services;
+using Infrastructure.Interceptors;
 
 namespace Infrastructure
 {
@@ -17,8 +19,18 @@ namespace Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             // DbContext
-            services.AddDbContext<Domain.Entities.LibraryContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("LibraryDB")));
+            // DbContext with Encryption Interceptor
+            services.AddScoped<EncryptionInterceptor>();
+            services.AddScoped<DecryptionInterceptor>();
+
+            services.AddDbContext<Domain.Entities.LibraryContext>((serviceProvider, options) =>
+            {
+                var encryptionInterceptor = serviceProvider.GetRequiredService<EncryptionInterceptor>();
+                var decryptionInterceptor = serviceProvider.GetRequiredService<DecryptionInterceptor>();
+
+                options.UseSqlServer(configuration.GetConnectionString("LibraryDB"))
+                       .AddInterceptors(encryptionInterceptor, decryptionInterceptor);  // ✅ Interceptor ekle
+            });
 
             // Repositories
             services.AddScoped<IUserRepository, UserRepository>();
@@ -32,7 +44,7 @@ namespace Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITwoFactorService, TwoFactorService>();
-
+            services.AddScoped<IEncryptionService, AesEncryptionService>();
             // ✅ REDIS CACHE
             services.AddStackExchangeRedisCache(options =>
             {

@@ -8,5 +8,7 @@ namespace LibraryManagement.Application.Interfaces.Repositories
         Task<IEnumerable<Book>> GetBooksByCategoryAsync(int categoryId);
         Task<Book> GetBookWithDetailsAsync(int id);
         Task<bool> IsBookAvailableAsync(int bookId);
+        Task<Book?> GetByPublicIdAsync(Guid publicId);  
+        Task<Book?> GetBookWithDetailsByPublicIdAsync(Guid publicId); 
     }
 }

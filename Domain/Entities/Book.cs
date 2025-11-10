@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Domain.Entities;
 
-public partial class Book
+public partial class Book : IEntity  //  : IEntity EKLEDİM
 {
     public int Id { get; set; }
 
@@ -29,7 +29,14 @@ public partial class Book
 
     public bool? IsActive { get; set; }
 
+    public Guid PublicId { get; set; }
+
     public virtual Category? Category { get; set; }
 
     public virtual ICollection<Loan> Loans { get; set; } = new List<Loan>();
+    // ✅ SOFT DELETE 
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedDate { get; set; }
+    public int? DeletedBy { get; set; }
+    
 }

@@ -16,7 +16,7 @@ namespace Infrastructure.UnitOfWork
         private IUserRepository _userRepository;
         private IBookRepository _bookRepository;
         private IGenericRepository<Category> _categoryRepository;
-        private IGenericRepository<Loan> _loanRepository;
+        private ILoanRepository _loanRepository;  // ← ILoanRepository yap
 
         public UnitOfWork(LibraryContext context)
         {
@@ -29,7 +29,7 @@ namespace Infrastructure.UnitOfWork
 
         public IGenericRepository<Category> Categories => _categoryRepository ??= new GenericRepository<Category>(_context);
 
-        public IGenericRepository<Loan> Loans => _loanRepository ??= new GenericRepository<Loan>(_context);
+        public ILoanRepository Loans => _loanRepository ??= new LoanRepository(_context);  // ← ILoanRepository ve LoanRepository yap
 
         public async Task<int> SaveChangesAsync()
         {

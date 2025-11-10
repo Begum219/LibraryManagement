@@ -8,6 +8,7 @@ using Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using BCrypt.Net;
 using LibraryManagement.Application.Interfaces.UnitOfWork;
+using Application.Interfaces.Services;
 
 namespace Infrastructure.Services
 {
@@ -17,17 +18,19 @@ namespace Infrastructure.Services
         private readonly ITokenService _tokenService;
         private readonly ITwoFactorService _twoFactorService;
         private readonly IConfiguration _configuration;
-
+        private readonly IEncryptionService _encryptionService;  // ✅ EKLE
         public AuthService(
             IUnitOfWork unitOfWork,
             ITokenService tokenService,
             ITwoFactorService twoFactorService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IEncryptionService encryptionService)
         {
             _unitOfWork = unitOfWork;
             _tokenService = tokenService;
             _twoFactorService = twoFactorService;
             _configuration = configuration;
+            _encryptionService = encryptionService;  // ✅ EKLE
         }
 
         public async Task<TokenResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -45,7 +48,9 @@ namespace Infrastructure.Services
                 Role = request.Role,
                 CreatedDate = DateTime.UtcNow,
                 IsActive = true,
-                TwoFactorEnabled = false
+                TwoFactorEnabled = false,
+                PublicId = Guid.NewGuid(),      // ✅ EKLE
+                IsDeleted = false               // ✅ EKLE
             };
 
             await _unitOfWork.Users.AddAsync(user);
@@ -73,52 +78,62 @@ namespace Infrastructure.Services
 
         public async Task<TokenResponseDto> LoginAsync(LoginRequestDto request)
         {
-            var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                throw new Exception("Email veya şifre hatalı!");
-
-            if (user.IsActive != true)
-                throw new Exception("Hesabınız aktif değil!");
-
-            // 2FA gerekiyor mu kontrol eder
-            bool requires2FA = user.TwoFactorEnabled && string.IsNullOrEmpty(request.TwoFactorCode);
-            if (requires2FA)
+            try
             {
+                // ✅ Email'i şifrele
+                var encryptedEmail = _encryptionService.Encrypt(request.Email);
+
+                var user = await _unitOfWork.Users.GetByEmailAsync(encryptedEmail);
+                if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                    throw new Exception("Email veya şifre hatalı!");
+
+                if (user.IsActive != true)
+                    throw new Exception("Hesabınız aktif değil!");
+
+                // 2FA gerekiyor mu kontrol eder
+                bool requires2FA = user.TwoFactorEnabled && string.IsNullOrEmpty(request.TwoFactorCode);
+                if (requires2FA)
+                {
+                    return new TokenResponseDto
+                    {
+                        AccessToken = null,
+                        RefreshToken = null,
+                        ExpiresAt = DateTime.UtcNow,
+                        RequiresTwoFactor = true
+                    };
+                }
+
+                // Eğer kod girilmişse ve doğrulanmışsa
+                if (user.TwoFactorEnabled && !string.IsNullOrEmpty(request.TwoFactorCode))
+                {
+                    if (!_twoFactorService.ValidateCode(user.TwoFactorSecretKey!, request.TwoFactorCode))
+                        throw new Exception("2FA kodu hatalı!");
+                }
+
+                var accessToken = _tokenService.GenerateAccessToken(user);
+                var refreshToken = _tokenService.GenerateRefreshToken();
+
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(
+                    int.Parse(_configuration["JwtSettings:RefreshTokenExpirationDays"]!));
+                user.UpdatedDate = DateTime.UtcNow;
+
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+
                 return new TokenResponseDto
                 {
-                    AccessToken = null,
-                    RefreshToken = null,
-                    ExpiresAt = DateTime.UtcNow,
-                    RequiresTwoFactor = true
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(
+                        int.Parse(_configuration["JwtSettings:AccessTokenExpirationMinutes"]!)),
+                    RequiresTwoFactor = false
                 };
             }
-
-            // Eğer kod girilmişse ve doğrulanmışsa
-            if (user.TwoFactorEnabled && !string.IsNullOrEmpty(request.TwoFactorCode))
+            catch (Exception ex)
             {
-                if (!_twoFactorService.ValidateCode(user.TwoFactorSecretKey!, request.TwoFactorCode))
-                    throw new Exception("2FA kodu hatalı!");
+                throw new Exception($"Login hatası: {ex.Message}", ex);
             }
-
-            var accessToken = _tokenService.GenerateAccessToken(user);
-            var refreshToken = _tokenService.GenerateRefreshToken();
-
-            user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(
-                int.Parse(_configuration["JwtSettings:RefreshTokenExpirationDays"]!));
-            user.UpdatedDate = DateTime.UtcNow;
-
-            _unitOfWork.Users.Update(user);
-            await _unitOfWork.SaveChangesAsync();
-
-            return new TokenResponseDto
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(
-                    int.Parse(_configuration["JwtSettings:AccessTokenExpirationMinutes"]!)),
-                RequiresTwoFactor = false
-            };
         }
 
         public async Task<TokenResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request)

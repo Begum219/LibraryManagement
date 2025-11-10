@@ -7,5 +7,6 @@ namespace LibraryManagement.Application.Interfaces.Repositories
     {
         Task<User> GetByEmailAsync(string email);
         Task<bool> UserExistsAsync(string email);
+        Task<User?> GetByPublicIdAsync(Guid publicId);
     }
 }

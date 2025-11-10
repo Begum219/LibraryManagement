@@ -10,9 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T> : IGenericRepository<T> where T : class, IEntity  // ← IEntity ekle
     {
-        private readonly LibraryContext _context;
+        protected readonly LibraryContext _context;
         private readonly DbSet<T> _dbSet;
 
         public GenericRepository(LibraryContext context)
@@ -23,17 +23,36 @@ namespace Infrastructure.Repositories
 
         public async Task<T> GetByIdAsync(int id)
         {
-            return await _dbSet.FindAsync(id);
+            // ✅ Soft delete filtresi ekle
+            var entity = await _dbSet.FindAsync(id);
+            if (entity != null && entity.IsDeleted)
+                return null;
+            return entity;
+        }
+
+        public async Task<T?> GetByPublicIdAsync(Guid publicId)
+        {
+            // ✅ PublicId ile getir + soft delete filtresi
+            return await _dbSet
+                .Where(e => e.PublicId == publicId && e.IsDeleted == false)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return await _dbSet.ToListAsync();
+            // ✅ Sadece silinmemiş kayıtlar
+            return await _dbSet
+                .Where(e => e.IsDeleted == false)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> expression)
         {
-            return await _dbSet.Where(expression).ToListAsync();
+            // ✅ Soft delete filtresi ekle
+            return await _dbSet
+                .Where(expression)
+                .Where(e => e.IsDeleted == false)
+                .ToListAsync();
         }
 
         public async Task AddAsync(T entity)
@@ -59,6 +78,41 @@ namespace Infrastructure.Repositories
         public void RemoveRange(IEnumerable<T> entities)
         {
             _dbSet.RemoveRange(entities);
+        }
+
+        public void Delete(T entity)
+        {
+            _dbSet.Remove(entity);
+        }
+
+        // ✅ SOFT DELETE METODLARI
+        public virtual async Task SoftDeleteAsync(T entity, int deletedBy)
+        {
+            entity.IsDeleted = true;
+            entity.IsActive = false;
+            entity.DeletedDate = DateTime.UtcNow;
+            entity.DeletedBy = deletedBy;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            _dbSet.Update(entity);
+        }
+
+        public virtual async Task RestoreAsync(T entity)
+        {
+            entity.IsDeleted = false;
+            entity.IsActive = true;
+            entity.DeletedDate = null;
+            entity.DeletedBy = null;
+            entity.UpdatedDate = DateTime.UtcNow;
+
+            _dbSet.Update(entity);
+        }
+
+        public virtual async Task<IEnumerable<T>> GetDeletedAsync()
+        {
+            return await _dbSet
+                .Where(e => e.IsDeleted == true)
+                .ToListAsync();
         }
     }
 }

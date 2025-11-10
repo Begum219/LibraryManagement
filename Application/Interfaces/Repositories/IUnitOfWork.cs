@@ -8,7 +8,8 @@ namespace LibraryManagement.Application.Interfaces.UnitOfWork
         IUserRepository Users { get; }
         IBookRepository Books { get; }
         IGenericRepository<Category> Categories { get; }
-        IGenericRepository<Loan> Loans { get; }
+        
+        ILoanRepository Loans { get; }
         Task<int> SaveChangesAsync();
     }
 }

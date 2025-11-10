@@ -7,7 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Entities\" />
+    <Compile Remove="Entities\Loan.Extensions.cs" />
+    <Compile Remove="Entities\User.Extensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Entities\Loan.Extensions.cs" />
+    <None Include="Entities\User.Extensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -30,5 +30,11 @@ namespace Infrastructure.Repositories
             return await _context.Users
                 .AnyAsync(u => u.Email == email);
         }
+        
+        public async Task<User?> GetByPublicIdAsync(Guid publicId)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.PublicId == publicId);
+        }
     }
 }
