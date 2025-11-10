@@ -5,7 +5,6 @@ using Domain.Entities;
 using System.Security.Claims;
 using BCrypt.Net;
 using LibraryManagement.Application.Interfaces.Services;
-using Infrastructure.Services;
 
 namespace LibraryManagement.Controllers
 {
@@ -17,11 +16,12 @@ namespace LibraryManagement.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UserController> _logger;
         private readonly ICacheService _cacheService;
+
         public UserController(IUnitOfWork unitOfWork, ILogger<UserController> logger, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
-            _cacheService = cacheService;  // ← ATAMA 
+            _cacheService = cacheService;
         }
 
         /// <summary>
@@ -35,10 +35,10 @@ namespace LibraryManagement.Controllers
             {
                 var users = await _unitOfWork.Users.GetAllAsync();
 
-                // Şifreleri gizle
+                // Şifreleri gizle, PublicId göster
                 var usersWithoutPasswords = users.Select(u => new
                 {
-                    u.Id,
+                    u.PublicId,
                     u.Email,
                     u.FullName,
                     u.Role,
@@ -58,65 +58,92 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// ID'ye göre kullanıcı getir (Admin veya kendi profili)
+        /// Kullanıcı profili getir (PublicId ile + IDOR korumalı)
         /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(int id)
+        [Authorize]
+        [HttpGet("{publicId:guid}")]  // ← :guid constraint ekledik
+        public async Task<IActionResult> GetUserByPublicId(Guid publicId)
         {
             try
             {
-                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-                // Admin değilse sadece kendi profilini görebilir
-                if (userRole != "Admin" && currentUserId != id)
-                    return Forbid();
-
-                var users = await _unitOfWork.Users.GetAllAsync();
-                var user = users.FirstOrDefault(u => u.Id == id);
+                // 1. PublicId'den kullanıcıyı bul
+                var user = await _unitOfWork.Users.GetByPublicIdAsync(publicId);
 
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
 
-                // Şifreyi gizle
-                var userWithoutPassword = new
-                {
-                    user.Id,
-                    user.Email,
-                    user.FullName,
-                    user.Role,
-                    user.CreatedDate,
-                    user.UpdatedDate,
-                    user.IsActive,
-                    user.TwoFactorEnabled
-                };
+                // 2. Token'dan mevcut kullanıcıyı al
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+                var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                return Ok(new { success = true, data = userWithoutPassword });
+                // 3. ✅ IDOR KONTROLÜ: Sadece kendi profili veya Admin
+                if (user.Id != currentUserId && currentUserRole != "Admin")
+                {
+                    _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının profiline erişmeye çalıştı: {TargetUserId}",
+                        currentUserId, user.Id);
+                    return Forbid();
+                }
+
+                // 4. Cache kontrolü
+                var cacheKey = $"user:{user.Id}:profile";
+                var cachedUser = await _cacheService.GetAsync<User>(cacheKey);
+
+                if (cachedUser != null)
+                {
+                    _logger.LogInformation("Kullanıcı profili cache'ten geldi: {UserId}", user.Id);
+                    return Ok(new { success = true, data = cachedUser, source = "cache" });
+                }
+
+                // 5. Cache'e kaydet
+                await _cacheService.SetAsync(cacheKey, user, TimeSpan.FromMinutes(5));
+
+                _logger.LogInformation("Kullanıcı profili getirildi: {UserId}", user.Id);
+                return Ok(new { success = true, data = user, source = "database" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kullanıcı getirilirken hata oluştu: {UserId}", id);
+                _logger.LogError(ex, "Kullanıcı getirme hatası: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Kendi profilini getir (cache'li)
+        /// </summary>
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-            var cacheKey = $"user:profile:{userId}";
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+                var cacheKey = $"user:profile:{userId}";
 
-            var cached = await _cacheService.GetAsync<User>(cacheKey);
-            if (cached != null)
-                return Ok(new { success = true, data = cached, source = "cache" });
+                var cached = await _cacheService.GetAsync<User>(cacheKey);
+                if (cached != null)
+                {
+                    _logger.LogInformation("Kullanıcı profili cache'ten geldi: {UserId}", userId);
+                    return Ok(new { success = true, data = cached, source = "cache" });
+                }
 
-            var user = await _unitOfWork.Users.GetByIdAsync(userId);
-            await _cacheService.SetAsync(cacheKey, user, TimeSpan.FromMinutes(30));
+                var user = await _unitOfWork.Users.GetByIdAsync(userId);
 
-            return Ok(new { success = true, data = user, source = "database" });
+                if (user == null)
+                    return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
+
+                await _cacheService.SetAsync(cacheKey, user, TimeSpan.FromMinutes(30));
+
+                _logger.LogInformation("Kullanıcı profili veritabanından geldi: {UserId}", userId);
+                return Ok(new { success = true, data = user, source = "database" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Profil getirme hatası");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         /// <summary>
-        /// Kendi profil bilgilerini getir
+        /// Kendi profil bilgilerini getir (özet)
         /// </summary>
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
@@ -132,7 +159,7 @@ namespace LibraryManagement.Controllers
 
                 var userProfile = new
                 {
-                    user.Id,
+                    user.PublicId,
                     user.Email,
                     user.FullName,
                     user.Role,
@@ -164,12 +191,14 @@ namespace LibraryManagement.Controllers
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
 
-                // Güncelleme
                 user.FullName = dto.FullName;
                 user.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Users.Update(user);
                 await _unitOfWork.SaveChangesAsync();
+
+                await _cacheService.RemoveAsync($"user:profile:{userId}");
+                await _cacheService.RemoveAsync($"user:{userId}:profile");
 
                 _logger.LogInformation("Profil güncellendi: UserId={UserId}", userId);
                 return Ok(new { success = true, message = "Profil başarıyla güncellendi" });
@@ -196,11 +225,9 @@ namespace LibraryManagement.Controllers
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
 
-                // Eski şifre kontrolü
                 if (!BCrypt.Net.BCrypt.Verify(dto.OldPassword, user.PasswordHash))
                     return BadRequest(new { success = false, message = "Eski şifre hatalı" });
 
-                // Yeni şifre hashleme
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
                 user.UpdatedDate = DateTime.UtcNow;
 
@@ -218,21 +245,19 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kullanıcı rolü değiştir (Admin)
+        /// Kullanıcı rolü değiştir (Admin - PublicId ile)
         /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id}/change-role")]
-        public async Task<IActionResult> ChangeUserRole(int id, [FromBody] ChangeRoleDto dto)
+        [HttpPut("{publicId:guid}/change-role")]  // ← PublicId + constraint
+        public async Task<IActionResult> ChangeUserRole(Guid publicId, [FromBody] ChangeRoleDto dto)
         {
             try
             {
-                var users = await _unitOfWork.Users.GetAllAsync();
-                var user = users.FirstOrDefault(u => u.Id == id);
+                var user = await _unitOfWork.Users.GetByPublicIdAsync(publicId);
 
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
 
-                // Rol kontrolü
                 var validRoles = new[] { "Admin", "Librarian", "Member" };
                 if (!validRoles.Contains(dto.NewRole))
                     return BadRequest(new { success = false, message = "Geçersiz rol" });
@@ -243,27 +268,26 @@ namespace LibraryManagement.Controllers
                 _unitOfWork.Users.Update(user);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kullanıcı rolü değiştirildi: UserId={UserId}, NewRole={NewRole}", id, dto.NewRole);
+                _logger.LogInformation("Kullanıcı rolü değiştirildi: UserId={UserId}, NewRole={NewRole}", user.Id, dto.NewRole);
                 return Ok(new { success = true, message = "Kullanıcı rolü başarıyla değiştirildi" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kullanıcı rolü değiştirilirken hata oluştu: {UserId}", id);
+                _logger.LogError(ex, "Kullanıcı rolü değiştirilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Kullanıcıyı aktif/pasif yap (Admin)
+        /// Kullanıcıyı aktif/pasif yap (Admin - PublicId ile)
         /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id}/toggle-status")]
-        public async Task<IActionResult> ToggleUserStatus(int id)
+        [HttpPut("{publicId:guid}/toggle-status")]  // ← PublicId + constraint
+        public async Task<IActionResult> ToggleUserStatus(Guid publicId)
         {
             try
             {
-                var users = await _unitOfWork.Users.GetAllAsync();
-                var user = users.FirstOrDefault(u => u.Id == id);
+                var user = await _unitOfWork.Users.GetByPublicIdAsync(publicId);
 
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
@@ -275,12 +299,12 @@ namespace LibraryManagement.Controllers
                 await _unitOfWork.SaveChangesAsync();
 
                 var status = user.IsActive == true ? "aktif" : "pasif";
-                _logger.LogInformation("Kullanıcı durumu değiştirildi: UserId={UserId}, Status={Status}", id, status);
+                _logger.LogInformation("Kullanıcı durumu değiştirildi: UserId={UserId}, Status={Status}", user.Id, status);
                 return Ok(new { success = true, message = $"Kullanıcı {status} hale getirildi" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kullanıcı durumu değiştirilirken hata oluştu: {UserId}", id);
+                _logger.LogError(ex, "Kullanıcı durumu değiştirilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -289,36 +313,33 @@ namespace LibraryManagement.Controllers
         /// Kullanıcı sil (soft delete - Admin)
         /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        [HttpDelete("{publicId:guid}")]
+        public async Task<IActionResult> DeleteUser(Guid publicId)
         {
             try
             {
                 var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-                // Kendi hesabını silemesin
-                if (currentUserId == id)
-                    return BadRequest(new { success = false, message = "Kendi hesabınızı silemezsiniz" });
-
-                var users = await _unitOfWork.Users.GetAllAsync();
-                var user = users.FirstOrDefault(u => u.Id == id);
+                var user = await _unitOfWork.Users.GetByPublicIdAsync(publicId);
 
                 if (user == null)
                     return NotFound(new { success = false, message = "Kullanıcı bulunamadı" });
 
-                // Soft delete
-                user.IsActive = false;
-                user.UpdatedDate = DateTime.UtcNow;
+                if (currentUserId == user.Id)
+                    return BadRequest(new { success = false, message = "Kendi hesabınızı silemezsiniz" });
 
-                _unitOfWork.Users.Update(user);
+                // ✅ Soft Delete (kim sildi bilgisi ile)
+                await _unitOfWork.Users.SoftDeleteAsync(user, currentUserId);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kullanıcı silindi (soft delete): UserId={UserId}", id);
+                _logger.LogInformation("Kullanıcı soft delete edildi: UserId={UserId}, DeletedBy={DeletedBy}",
+                    user.Id, currentUserId);
+
                 return Ok(new { success = true, message = "Kullanıcı başarıyla silindi" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kullanıcı silinirken hata oluştu: {UserId}", id);
+                _logger.LogError(ex, "Kullanıcı silinirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -340,10 +361,9 @@ namespace LibraryManagement.Controllers
                     u.FullName.Contains(query)
                 );
 
-                // Şifreleri gizle
                 var usersWithoutPasswords = users.Select(u => new
                 {
-                    u.Id,
+                    u.PublicId,
                     u.Email,
                     u.FullName,
                     u.Role,
@@ -358,6 +378,62 @@ namespace LibraryManagement.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+        /// <summary>
+        /// Maskelenmiş kullanıcı listesi (Admin)
+        /// </summary>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("masked")]
+        public async Task<IActionResult> GetMaskedUsers()
+        {
+            try
+            {
+                var users = await _unitOfWork.Users.GetAllAsync();
+
+                var maskedUsers = users.Select(u => new
+                {
+                    u.PublicId,
+                    Email = MaskEmail(u.Email),
+                    FullName = MaskName(u.FullName),
+                    u.Role,
+                    u.IsActive
+                });
+
+                return Ok(new { success = true, data = maskedUsers });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Maskelenmiş kullanıcı listesi alınırken hata oluştu");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// E-mail maskesi (örn: johndoe@gmail.com → j*****e@gmail.com)
+        /// </summary>
+        private string MaskEmail(string email)
+        {
+            var parts = email.Split('@');
+            if (parts[0].Length <= 2)
+                return "***@" + parts[1];
+
+            return parts[0][0] + new string('*', parts[0].Length - 2) + parts[0][^1] + "@" + parts[1];
+        }
+
+        /// <summary>
+        /// İsim maskesi (örn: Ahmet Yılmaz → A**** Y****)
+        /// </summary>
+        private string MaskName(string fullName)
+        {
+            var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            return string.Join(" ", parts.Select(p =>
+                p.Length <= 1
+                    ? "*"
+                    : p[0] + new string('*', p.Length - 1)
+            ));
+        }
+
+
     }
 
     // DTOs

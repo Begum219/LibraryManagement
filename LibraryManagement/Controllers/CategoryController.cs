@@ -120,14 +120,23 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kategori sil (soft delete - Admin)
         /// </summary>
+        /// <summary>
+        /// Kategori sil (soft delete - Admin)
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             try
             {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                var category = categories.FirstOrDefault(c => c.Id == id);
+                // ✅ Tüm claim'leri logla (debug için)
+                _logger.LogInformation("=== Token Claims Debug ===");
+                foreach (var claim in User.Claims)
+                {
+                    _logger.LogInformation("Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
+                }
+
+                var category = await _unitOfWork.Categories.GetByIdAsync(id);
 
                 if (category == null)
                     return NotFound(new { success = false, message = "Kategori bulunamadı" });
@@ -136,18 +145,65 @@ namespace LibraryManagement.Controllers
                 var booksInCategory = await _unitOfWork.Books.GetBooksByCategoryAsync(id);
                 if (booksInCategory.Any())
                 {
-                    return BadRequest(new { success = false, message = "Bu kategoriye ait kitaplar var. Önce kitapları silin veya başka kategoriye taşıyın." });
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Bu kategoriye ait kitaplar var. Önce kitapları silin veya başka kategoriye taşıyın."
+                    });
                 }
 
-                // Soft delete
-                category.IsActive = false;
-                category.UpdatedDate = DateTime.UtcNow;
+                // ✅ Farklı claim tiplerini dene
+                int deletedBy = 0;
 
-                _unitOfWork.Categories.Update(category);
-                await _unitOfWork.SaveChangesAsync();
+                // Tüm olası claim tiplerini kontrol et
+                var possibleClaims = new[]
+                {
+            "UserId",
+            "Id",
+            "id",
+            "UserID",
+            "userid",
+            "user_id",
+            System.Security.Claims.ClaimTypes.NameIdentifier,
+            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+            "sub",
+            "nameid"
+        };
 
-                _logger.LogInformation("Kategori silindi (soft delete): {CategoryId}", id);
-                return Ok(new { success = true, message = "Kategori başarıyla silindi" });
+                foreach (var claimType in possibleClaims)
+                {
+                    var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
+                    if (claim != null && int.TryParse(claim.Value, out deletedBy))
+                    {
+                        _logger.LogInformation("UserId claim bulundu! Type: {Type}, Value: {Value}", claimType, deletedBy);
+                        break;
+                    }
+                }
+
+                if (deletedBy == 0)
+                {
+                    _logger.LogWarning("⚠️ UserId claim'i bulunamadı! Token yapısını kontrol edin.");
+                }
+
+                // ✅ SoftDeleteAsync metodunu kullan
+                await _unitOfWork.Categories.SoftDeleteAsync(category, deletedBy);
+
+                // ✅ Değişiklikleri kaydet
+                var result = await _unitOfWork.SaveChangesAsync();
+
+                if (result <= 0)
+                {
+                    return BadRequest(new { success = false, message = "Değişiklikler kaydedilemedi" });
+                }
+
+                _logger.LogInformation("Kategori silindi (soft delete): CategoryId={CategoryId}, DeletedBy={DeletedBy}", id, deletedBy);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Kategori başarıyla silindi",
+                    debugInfo = new { deletedBy = deletedBy } // Debug için
+                });
             }
             catch (Exception ex)
             {
@@ -155,6 +211,7 @@ namespace LibraryManagement.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
 
         /// <summary>
         /// Kategorideki kitap sayısı

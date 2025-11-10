@@ -42,7 +42,23 @@ namespace LibraryManagement.Controllers
                 if (cachedBooks != null)
                 {
                     _logger.LogInformation("Kitaplar cache'ten geldi");
-                    return Ok(new { success = true, data = cachedBooks, source = "cache" });
+
+                    // PublicId göster, Id gizle
+                    var booksWithPublicId = cachedBooks.Select(b => new
+                    {
+                        b.PublicId,
+                        b.Title,
+                        b.Author,
+                        b.Isbn,
+                        b.Publisher,
+                        b.PublishYear,
+                        b.CategoryId,
+                        b.TotalCopies,
+                        b.AvailableCopies,
+                        b.IsActive
+                    });
+
+                    return Ok(new { success = true, data = booksWithPublicId, source = "cache" });
                 }
 
                 // ✅ Cache'te yoksa veritabanından getir
@@ -52,7 +68,23 @@ namespace LibraryManagement.Controllers
                 await _cacheService.SetAsync(cacheKey, books.ToList(), TimeSpan.FromMinutes(10));
 
                 _logger.LogInformation("Kitaplar veritabanından geldi ve cache'lendi");
-                return Ok(new { success = true, data = books, source = "database" });
+
+                // PublicId göster
+                var booksListWithPublicId = books.Select(b => new
+                {
+                    b.PublicId,
+                    b.Title,
+                    b.Author,
+                    b.Isbn,
+                    b.Publisher,
+                    b.PublishYear,
+                    b.CategoryId,
+                    b.TotalCopies,
+                    b.AvailableCopies,
+                    b.IsActive
+                });
+
+                return Ok(new { success = true, data = booksListWithPublicId, source = "database" });
             }
             catch (Exception ex)
             {
@@ -62,23 +94,42 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// ID'ye göre kitap getir (detaylı - kategori ve ödünç bilgileri ile)
+        /// PublicId ile kitap getir (detaylı - kategori ve ödünç bilgileri ile)
         /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetBookById(int id)
+        [HttpGet("{publicId}")]
+        public async Task<IActionResult> GetBookByPublicId(Guid publicId)
         {
             try
             {
-                var book = await _unitOfWork.Books.GetBookWithDetailsAsync(id);
+                // PublicId'den kitabı bul
+                var book = await _unitOfWork.Books.GetBookWithDetailsByPublicIdAsync(publicId);
 
                 if (book == null)
                     return NotFound(new { success = false, message = "Kitap bulunamadı" });
 
-                return Ok(new { success = true, data = book });
+                // PublicId göster
+                var bookWithPublicId = new
+                {
+                    book.PublicId,
+                    book.Title,
+                    book.Author,
+                    book.Isbn,
+                    book.Publisher,
+                    book.PublishYear,
+                    book.CategoryId,
+                    book.Category,
+                    book.TotalCopies,
+                    book.AvailableCopies,
+                    book.IsActive,
+                    book.CreatedDate,
+                    book.UpdatedDate
+                };
+
+                return Ok(new { success = true, data = bookWithPublicId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kitap detayı getirilirken hata oluştu: {BookId}", id);
+                _logger.LogError(ex, "Kitap detayı getirilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -92,7 +143,23 @@ namespace LibraryManagement.Controllers
             try
             {
                 var books = await _unitOfWork.Books.GetBooksByCategoryAsync(categoryId);
-                return Ok(new { success = true, data = books });
+
+                // PublicId göster
+                var booksWithPublicId = books.Select(b => new
+                {
+                    b.PublicId,
+                    b.Title,
+                    b.Author,
+                    b.Isbn,
+                    b.Publisher,
+                    b.PublishYear,
+                    b.CategoryId,
+                    b.TotalCopies,
+                    b.AvailableCopies,
+                    b.IsActive
+                });
+
+                return Ok(new { success = true, data = booksWithPublicId });
             }
             catch (Exception ex)
             {
@@ -102,19 +169,34 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap müsaitlik kontrolü
+        /// Kitap müsaitlik kontrolü (PublicId ile)
         /// </summary>
-        [HttpGet("{id}/availability")]
-        public async Task<IActionResult> CheckAvailability(int id)
+        [HttpGet("{publicId}/availability")]
+        public async Task<IActionResult> CheckAvailability(Guid publicId)
         {
             try
             {
-                var isAvailable = await _unitOfWork.Books.IsBookAvailableAsync(id);
-                return Ok(new { success = true, data = new { bookId = id, isAvailable } });
+                var book = await _unitOfWork.Books.GetByPublicIdAsync(publicId);
+
+                if (book == null)
+                    return NotFound(new { success = false, message = "Kitap bulunamadı" });
+
+                var isAvailable = (book.AvailableCopies ?? 0) > 0;
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        bookPublicId = publicId,
+                        isAvailable,
+                        availableCopies = book.AvailableCopies
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Müsaitlik kontrolü yapılırken hata oluştu: {BookId}", id);
+                _logger.LogError(ex, "Müsaitlik kontrolü yapılırken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -124,12 +206,24 @@ namespace LibraryManagement.Controllers
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpPost]
-        public async Task<IActionResult> CreateBook([FromBody] Book book)
+        public async Task<IActionResult> CreateBook([FromBody] CreateBookDto dto)
         {
             try
             {
-                book.CreatedDate = DateTime.UtcNow;
-                book.IsActive = true;
+                var book = new Book
+                {
+                    PublicId = Guid.NewGuid(),  // ← YENİ GUID
+                    Title = dto.Title,
+                    Author = dto.Author,
+                    Isbn = dto.Isbn,
+                    Publisher = dto.Publisher,
+                    PublishYear = dto.PublishYear,
+                    CategoryId = dto.CategoryId,
+                    TotalCopies = dto.TotalCopies,
+                    AvailableCopies = dto.TotalCopies,  // Başlangıçta tümü müsait
+                    CreatedDate = DateTime.UtcNow,
+                    IsActive = true
+                };
 
                 await _unitOfWork.Books.AddAsync(book);
                 await _unitOfWork.SaveChangesAsync();
@@ -138,7 +232,18 @@ namespace LibraryManagement.Controllers
                 await _cacheService.RemoveByPrefixAsync("books:");
 
                 _logger.LogInformation("Yeni kitap eklendi ve cache temizlendi: {BookTitle}", book.Title);
-                return Ok(new { success = true, data = book, message = "Kitap başarıyla eklendi" });
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        book.PublicId,
+                        book.Title,
+                        book.Author
+                    },
+                    message = "Kitap başarıyla eklendi"
+                });
             }
             catch (Exception ex)
             {
@@ -148,28 +253,28 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap güncelle (Admin/Librarian) - Cache temizleme ile
+        /// Kitap güncelle (Admin/Librarian - PublicId ile) - Cache temizleme ile
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBook(int id, [FromBody] Book book)
+        [HttpPut("{publicId}")]
+        public async Task<IActionResult> UpdateBook(Guid publicId, [FromBody] UpdateBookDto dto)
         {
             try
             {
-                var existingBook = await _unitOfWork.Books.GetBookWithDetailsAsync(id);
+                var existingBook = await _unitOfWork.Books.GetBookWithDetailsByPublicIdAsync(publicId);
 
                 if (existingBook == null)
                     return NotFound(new { success = false, message = "Kitap bulunamadı" });
 
                 // Güncelleme
-                existingBook.Title = book.Title;
-                existingBook.Author = book.Author;
-                existingBook.Isbn = book.Isbn;
-                existingBook.Publisher = book.Publisher;
-                existingBook.PublishYear = book.PublishYear;
-                existingBook.CategoryId = book.CategoryId;
-                existingBook.TotalCopies = book.TotalCopies;
-                existingBook.AvailableCopies = book.AvailableCopies;
+                existingBook.Title = dto.Title;
+                existingBook.Author = dto.Author;
+                existingBook.Isbn = dto.Isbn;
+                existingBook.Publisher = dto.Publisher;
+                existingBook.PublishYear = dto.PublishYear;
+                existingBook.CategoryId = dto.CategoryId;
+                existingBook.TotalCopies = dto.TotalCopies;
+                existingBook.AvailableCopies = dto.AvailableCopies;
                 existingBook.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Books.Update(existingBook);
@@ -178,46 +283,59 @@ namespace LibraryManagement.Controllers
                 // ✅ Cache'i temizle
                 await _cacheService.RemoveByPrefixAsync("books:");
 
-                _logger.LogInformation("Kitap güncellendi ve cache temizlendi: {BookId}", id);
-                return Ok(new { success = true, data = existingBook, message = "Kitap başarıyla güncellendi" });
+                _logger.LogInformation("Kitap güncellendi ve cache temizlendi: {PublicId}", publicId);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        existingBook.PublicId,
+                        existingBook.Title,
+                        existingBook.Author
+                    },
+                    message = "Kitap başarıyla güncellendi"
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kitap güncellenirken hata oluştu: {BookId}", id);
+                _logger.LogError(ex, "Kitap güncellenirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Kitap sil (soft delete - Admin) - Cache temizleme ile
+        /// Kitap sil (soft delete - Admin - PublicId ile) - Cache temizleme ile
         /// </summary>
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBook(int id)
+        [Authorize(Roles = "Admin,Librarian")]
+        [HttpDelete("{publicId:guid}")]
+        public async Task<IActionResult> DeleteBook(Guid publicId)
         {
             try
             {
-                var book = await _unitOfWork.Books.GetBookWithDetailsAsync(id);
+                // ✅ Mevcut kullanıcının ID'sini al
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+                var book = await _unitOfWork.Books.GetByPublicIdAsync(publicId);
 
                 if (book == null)
                     return NotFound(new { success = false, message = "Kitap bulunamadı" });
 
-                // Soft delete
-                book.IsActive = false;
-                book.UpdatedDate = DateTime.UtcNow;
-
-                _unitOfWork.Books.Update(book);
+                // ✅ YENİ: SoftDeleteAsync metodunu kullan
+                await _unitOfWork.Books.SoftDeleteAsync(book, currentUserId);
                 await _unitOfWork.SaveChangesAsync();
 
                 // ✅ Cache'i temizle
                 await _cacheService.RemoveByPrefixAsync("books:");
 
-                _logger.LogInformation("Kitap silindi (soft delete) ve cache temizlendi: {BookId}", id);
+                _logger.LogInformation("Kitap soft delete edildi: BookId={BookId}, DeletedBy={DeletedBy}",
+                    book.Id, currentUserId);
+
                 return Ok(new { success = true, message = "Kitap başarıyla silindi" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kitap silinirken hata oluştu: {BookId}", id);
+                _logger.LogError(ex, "Kitap silinirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -225,7 +343,7 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kitap arama (title, author, isbn)
         /// </summary>
-        [EnableRateLimiting("search")]  // ← EKLENDI
+        [EnableRateLimiting("search")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchBooks([FromQuery] string query)
         {
@@ -240,7 +358,21 @@ namespace LibraryManagement.Controllers
                     (b.Isbn != null && b.Isbn.Contains(query))
                 );
 
-                return Ok(new { success = true, data = books });
+                // PublicId göster
+                var booksWithPublicId = books.Select(b => new
+                {
+                    b.PublicId,
+                    b.Title,
+                    b.Author,
+                    b.Isbn,
+                    b.Publisher,
+                    b.PublishYear,
+                    b.TotalCopies,
+                    b.AvailableCopies,
+                    b.IsActive
+                });
+
+                return Ok(new { success = true, data = booksWithPublicId });
             }
             catch (Exception ex)
             {
@@ -248,5 +380,29 @@ namespace LibraryManagement.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+    }
+
+    // DTOs
+    public class CreateBookDto
+    {
+        public string Title { get; set; } = null!;
+        public string Author { get; set; } = null!;
+        public string? Isbn { get; set; }
+        public string? Publisher { get; set; }
+        public int? PublishYear { get; set; }
+        public int CategoryId { get; set; }
+        public int TotalCopies { get; set; }
+    }
+
+    public class UpdateBookDto
+    {
+        public string Title { get; set; } = null!;
+        public string Author { get; set; } = null!;
+        public string? Isbn { get; set; }
+        public string? Publisher { get; set; }
+        public int? PublishYear { get; set; }
+        public int CategoryId { get; set; }
+        public int TotalCopies { get; set; }
+        public int AvailableCopies { get; set; }
     }
 }

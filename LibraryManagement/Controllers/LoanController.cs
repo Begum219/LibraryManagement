@@ -15,6 +15,7 @@ namespace LibraryManagement.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LoanController> _logger;
         private readonly ICacheService _cacheService;
+
         public LoanController(IUnitOfWork unitOfWork, ILogger<LoanController> logger, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
@@ -32,7 +33,21 @@ namespace LibraryManagement.Controllers
             try
             {
                 var loans = await _unitOfWork.Loans.GetAllAsync();
-                return Ok(new { success = true, data = loans });
+
+                // PublicId göster
+                var loansWithPublicId = loans.Select(l => new
+                {
+                    l.PublicId,  // ← Id yerine
+                    l.UserId,
+                    l.BookId,
+                    l.LoanDate,
+                    l.DueDate,
+                    l.ReturnDate,
+                    l.IsReturned,
+                    l.Fine
+                });
+
+                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {
@@ -40,6 +55,10 @@ namespace LibraryManagement.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Ödünç istatistikleri (cache'li)
+        /// </summary>
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics()
         {
@@ -49,10 +68,8 @@ namespace LibraryManagement.Controllers
             if (cached != null)
                 return Ok(new { success = true, data = cached, source = "cache" });
 
-            // ✅ Önce tüm loan'ları çek
             var allLoans = await _unitOfWork.Loans.GetAllAsync();
 
-            // ✅ Sonra istatistikleri hesapla
             var stats = new
             {
                 TotalLoans = allLoans.Count(),
@@ -63,6 +80,43 @@ namespace LibraryManagement.Controllers
             await _cacheService.SetAsync(cacheKey, stats, TimeSpan.FromMinutes(5));
 
             return Ok(new { success = true, data = stats, source = "database" });
+        }
+
+        /// <summary>
+        /// PublicId ile ödünç kaydı getir (IDOR korumalı)
+        /// </summary>
+        [HttpGet("{publicId}")]
+        public async Task<IActionResult> GetLoanByPublicId(Guid publicId)
+        {
+            try
+            {
+                // 1. PublicId'den loan'ı bul
+                var loan = await _unitOfWork.Loans.GetLoanWithDetailsByPublicIdAsync(publicId);
+
+                if (loan == null)
+                    return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
+
+                // 2. Token'dan mevcut kullanıcıyı al
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+                var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                // 3. ✅ IDOR KONTROLÜ: Sadece kendi ödüncü veya Admin/Librarian
+                if (loan.UserId != currentUserId &&
+                    currentUserRole != "Admin" &&
+                    currentUserRole != "Librarian")
+                {
+                    _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının ödüncüne erişmeye çalıştı: {LoanId}",
+                        currentUserId, loan.Id);
+                    return Forbid();
+                }
+
+                return Ok(new { success = true, data = loan });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ödünç kaydı getirme hatası: {PublicId}", publicId);
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
         /// <summary>
@@ -77,7 +131,18 @@ namespace LibraryManagement.Controllers
                 var allLoans = await _unitOfWork.Loans.GetAllAsync();
                 var myLoans = allLoans.Where(l => l.UserId == userId && l.IsReturned != true).ToList();
 
-                return Ok(new { success = true, data = myLoans });
+                // PublicId göster
+                var loansWithPublicId = myLoans.Select(l => new
+                {
+                    l.PublicId,
+                    l.BookId,
+                    l.LoanDate,
+                    l.DueDate,
+                    l.IsReturned,
+                    l.Fine
+                });
+
+                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {
@@ -98,7 +163,18 @@ namespace LibraryManagement.Controllers
                 var allLoans = await _unitOfWork.Loans.GetAllAsync();
                 var myHistory = allLoans.Where(l => l.UserId == userId && l.IsReturned == true).ToList();
 
-                return Ok(new { success = true, data = myHistory });
+                // PublicId göster
+                var historyWithPublicId = myHistory.Select(l => new
+                {
+                    l.PublicId,
+                    l.BookId,
+                    l.LoanDate,
+                    l.DueDate,
+                    l.ReturnDate,
+                    l.Fine
+                });
+
+                return Ok(new { success = true, data = historyWithPublicId });
             }
             catch (Exception ex)
             {
@@ -122,7 +198,18 @@ namespace LibraryManagement.Controllers
                     l.DueDate < DateTime.UtcNow
                 ).ToList();
 
-                return Ok(new { success = true, data = overdueLoans });
+                // PublicId göster
+                var overdueWithPublicId = overdueLoans.Select(l => new
+                {
+                    l.PublicId,
+                    l.UserId,
+                    l.BookId,
+                    l.LoanDate,
+                    l.DueDate,
+                    DaysOverdue = (DateTime.UtcNow - l.DueDate).Days
+                });
+
+                return Ok(new { success = true, data = overdueWithPublicId });
             }
             catch (Exception ex)
             {
@@ -164,10 +251,11 @@ namespace LibraryManagement.Controllers
                 // Ödünç kaydı oluştur
                 var loan = new Loan
                 {
+                    PublicId = Guid.NewGuid(),  // ← YENİ GUID
                     BookId = bookId,
                     UserId = userId,
                     LoanDate = DateTime.UtcNow,
-                    DueDate = DateTime.UtcNow.AddDays(14), // 14 gün ödünç süresi
+                    DueDate = DateTime.UtcNow.AddDays(14),
                     IsReturned = false,
                     Fine = 0,
                     CreatedDate = DateTime.UtcNow,
@@ -183,8 +271,22 @@ namespace LibraryManagement.Controllers
 
                 await _unitOfWork.SaveChangesAsync();
 
+                // Cache temizle
+                await _cacheService.RemoveAsync("loans:statistics");
+
                 _logger.LogInformation("Kitap ödünç alındı: UserId={UserId}, BookId={BookId}", userId, bookId);
-                return Ok(new { success = true, data = loan, message = "Kitap başarıyla ödünç alındı" });
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        loan.PublicId,  // ← Id yerine PublicId döndür
+                        loan.LoanDate,
+                        loan.DueDate
+                    },
+                    message = "Kitap başarıyla ödünç alındı"
+                });
             }
             catch (Exception ex)
             {
@@ -194,26 +296,29 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap iade et
+        /// Kitap iade et (PublicId ile + IDOR korumalı)
         /// </summary>
-        [HttpPost("return/{loanId}")]
-        public async Task<IActionResult> ReturnBook(int loanId)
+        [HttpPost("return/{publicId}")]
+        public async Task<IActionResult> ReturnBook(Guid publicId)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // Ödünç kaydı kontrolü
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var loan = allLoans.FirstOrDefault(l => l.Id == loanId);
+                // PublicId'den loan'ı bul
+                var loan = await _unitOfWork.Loans.GetByPublicIdAsync(publicId);
 
                 if (loan == null)
                     return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
 
-                // Kullanıcı kontrolü (admin değilse sadece kendi ödüncünü iade edebilir)
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                // ✅ IDOR KONTROLÜ: Admin/Librarian değilse sadece kendi ödüncünü iade edebilir
                 if (userRole != "Admin" && userRole != "Librarian" && loan.UserId != userId)
+                {
+                    _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının ödüncünü iade etmeye çalıştı: {LoanId}",
+                        userId, loan.Id);
                     return Forbid();
+                }
 
                 // Zaten iade edilmiş mi kontrolü
                 if (loan.IsReturned == true)
@@ -228,7 +333,7 @@ namespace LibraryManagement.Controllers
                 if (loan.DueDate < DateTime.UtcNow)
                 {
                     var daysLate = (DateTime.UtcNow - loan.DueDate).Days;
-                    loan.Fine = daysLate * 2; // 2 TL/gün
+                    loan.Fine = daysLate * 2;
                 }
 
                 _unitOfWork.Loans.Update(loan);
@@ -244,11 +349,20 @@ namespace LibraryManagement.Controllers
 
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kitap iade edildi: LoanId={LoanId}, Fine={Fine}", loanId, loan.Fine);
+                // Cache temizle
+                await _cacheService.RemoveAsync("loans:statistics");
+
+                _logger.LogInformation("Kitap iade edildi: LoanId={LoanId}, Fine={Fine}", loan.Id, loan.Fine);
+
                 return Ok(new
                 {
                     success = true,
-                    data = loan,
+                    data = new
+                    {
+                        loan.PublicId,
+                        loan.ReturnDate,
+                        loan.Fine
+                    },
                     message = (loan.Fine ?? 0) > 0
                         ? $"Kitap iade edildi. Gecikme cezası: {loan.Fine} TL"
                         : "Kitap başarıyla iade edildi"
@@ -256,31 +370,34 @@ namespace LibraryManagement.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kitap iade edilirken hata oluştu: {LoanId}", loanId);
+                _logger.LogError(ex, "Kitap iade edilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Ödünç süresini uzat
+        /// Ödünç süresini uzat (PublicId ile + IDOR korumalı)
         /// </summary>
-        [HttpPost("renew/{loanId}")]
-        public async Task<IActionResult> RenewLoan(int loanId)
+        [HttpPost("renew/{publicId}")]
+        public async Task<IActionResult> RenewLoan(Guid publicId)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-                // Ödünç kaydı kontrolü
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var loan = allLoans.FirstOrDefault(l => l.Id == loanId);
+                // PublicId'den loan'ı bul
+                var loan = await _unitOfWork.Loans.GetByPublicIdAsync(publicId);
 
                 if (loan == null)
                     return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
 
-                // Kullanıcı kontrolü
+                // ✅ IDOR KONTROLÜ: Sadece kendi ödüncünü yenileyebilir
                 if (loan.UserId != userId)
+                {
+                    _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının ödüncünü yenilemeye çalıştı: {LoanId}",
+                        userId, loan.Id);
                     return Forbid();
+                }
 
                 // İade edilmiş mi kontrolü
                 if (loan.IsReturned == true)
@@ -297,12 +414,22 @@ namespace LibraryManagement.Controllers
                 _unitOfWork.Loans.Update(loan);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Ödünç süresi uzatıldı: LoanId={LoanId}", loanId);
-                return Ok(new { success = true, data = loan, message = "Ödünç süresi 14 gün uzatıldı" });
+                _logger.LogInformation("Ödünç süresi uzatıldı: LoanId={LoanId}", loan.Id);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        loan.PublicId,
+                        loan.DueDate
+                    },
+                    message = "Ödünç süresi 14 gün uzatıldı"
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Ödünç süresi uzatılırken hata oluştu: {LoanId}", loanId);
+                _logger.LogError(ex, "Ödünç süresi uzatılırken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -319,7 +446,19 @@ namespace LibraryManagement.Controllers
                 var allLoans = await _unitOfWork.Loans.GetAllAsync();
                 var userLoans = allLoans.Where(l => l.UserId == userId).ToList();
 
-                return Ok(new { success = true, data = userLoans });
+                // PublicId göster
+                var loansWithPublicId = userLoans.Select(l => new
+                {
+                    l.PublicId,
+                    l.BookId,
+                    l.LoanDate,
+                    l.DueDate,
+                    l.ReturnDate,
+                    l.IsReturned,
+                    l.Fine
+                });
+
+                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {
