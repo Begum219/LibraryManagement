@@ -18,7 +18,7 @@ namespace Infrastructure.Services
         private readonly ITokenService _tokenService;
         private readonly ITwoFactorService _twoFactorService;
         private readonly IConfiguration _configuration;
-        private readonly IEncryptionService _encryptionService;  // ✅ EKLE
+        private readonly IEncryptionService _encryptionService;  
         public AuthService(
             IUnitOfWork unitOfWork,
             ITokenService tokenService,
@@ -30,7 +30,7 @@ namespace Infrastructure.Services
             _tokenService = tokenService;
             _twoFactorService = twoFactorService;
             _configuration = configuration;
-            _encryptionService = encryptionService;  // ✅ EKLE
+            _encryptionService = encryptionService;  
         }
 
         public async Task<TokenResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -49,8 +49,8 @@ namespace Infrastructure.Services
                 CreatedDate = DateTime.UtcNow,
                 IsActive = true,
                 TwoFactorEnabled = false,
-                PublicId = Guid.NewGuid(),      // ✅ EKLE
-                IsDeleted = false               // ✅ EKLE
+                PublicId = Guid.NewGuid(),      
+                IsDeleted = false               
             };
 
             await _unitOfWork.Users.AddAsync(user);
@@ -80,7 +80,7 @@ namespace Infrastructure.Services
         {
             try
             {
-                // ✅ Email'i şifrele
+                //  Email'i şifrele
                 var encryptedEmail = _encryptionService.Encrypt(request.Email);
 
                 var user = await _unitOfWork.Users.GetByEmailAsync(encryptedEmail);

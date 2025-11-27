@@ -12,6 +12,7 @@ using StackExchange.Redis;
 using Application.Interfaces.Services;
 using Infrastructure.Interceptors;
 
+
 namespace Infrastructure
 {
     public static class ServiceRegistration
@@ -20,16 +21,17 @@ namespace Infrastructure
         {
             // DbContext
             // DbContext with Encryption Interceptor
+            services.AddScoped<IEncryptionService, AesEncryptionService>();
             services.AddScoped<EncryptionInterceptor>();
             services.AddScoped<DecryptionInterceptor>();
 
-            services.AddDbContext<Domain.Entities.LibraryContext>((serviceProvider, options) =>
+            services.AddDbContext<LibraryContext>((serviceProvider, options) =>
             {
                 var encryptionInterceptor = serviceProvider.GetRequiredService<EncryptionInterceptor>();
                 var decryptionInterceptor = serviceProvider.GetRequiredService<DecryptionInterceptor>();
 
                 options.UseSqlServer(configuration.GetConnectionString("LibraryDB"))
-                       .AddInterceptors(encryptionInterceptor, decryptionInterceptor);  // ✅ Interceptor ekle
+                       .AddInterceptors(encryptionInterceptor, decryptionInterceptor);  // Interceptor ekle
             });
 
             // Repositories
@@ -44,8 +46,11 @@ namespace Infrastructure
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ITwoFactorService, TwoFactorService>();
-            services.AddScoped<IEncryptionService, AesEncryptionService>();
-            // ✅ REDIS CACHE
+            
+            //  EMAIL SERVICE 
+            services.AddScoped<IEmailService, EmailService>();
+
+            // REDIS CACHE
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = configuration.GetConnectionString("Redis")

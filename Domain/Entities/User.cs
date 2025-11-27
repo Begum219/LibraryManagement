@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Domain.Entities;
 
-public partial class User : IEntity  //  : IEntity EKLEDİM
+public partial class User : IEntity
 {
     public int Id { get; set; }
 
@@ -31,10 +32,13 @@ public partial class User : IEntity  //  : IEntity EKLEDİM
 
     public Guid PublicId { get; set; }
 
-    public virtual ICollection<Loan> Loans { get; set; } = new List<Loan>();
-    // ✅ SOFT DELETE 
     public bool IsDeleted { get; set; }
+
     public DateTime? DeletedDate { get; set; }
+
     public int? DeletedBy { get; set; }
-    
+
+    public byte[] RowVersion { get; set; } = null!;
+
+    public virtual ICollection<Loan> Loans { get; set; } = new List<Loan>();
 }

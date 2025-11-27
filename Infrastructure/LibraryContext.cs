@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Domain.Entities;
 
-namespace Domain.Entities;
+namespace Infrastructure;
 
 public partial class LibraryContext : DbContext
 {
@@ -25,9 +26,9 @@ public partial class LibraryContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=.;Database=LibraryDB;Trusted_Connection=True;TrustServerCertificate=True;");
+//    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+//        => optionsBuilder.UseSqlServer("Server=DESKTOP-LQ1OPKF;Database=LibraryDB;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,16 +36,23 @@ public partial class LibraryContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Books__3214EC0703CA75BC");
 
+            entity.HasIndex(e => e.PublicId, "IX_Books_PublicId").IsUnique();
+
             entity.Property(e => e.Author).HasMaxLength(100);
             entity.Property(e => e.AvailableCopies).HasDefaultValue(1);
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.DeletedDate).HasColumnType("datetime");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Isbn)
                 .HasMaxLength(20)
                 .HasColumnName("ISBN");
+            entity.Property(e => e.PublicId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.Publisher).HasMaxLength(100);
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.TotalCopies).HasDefaultValue(1);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
@@ -58,12 +66,18 @@ public partial class LibraryContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Categori__3214EC078AAC5243");
 
+            entity.HasIndex(e => e.PublicId, "IX_Categories_PublicId").IsUnique();
+
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.DeletedDate).HasColumnType("datetime");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
         });
 
@@ -71,9 +85,12 @@ public partial class LibraryContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Loans__3214EC07314ACE03");
 
+            entity.HasIndex(e => e.PublicId, "IX_Loans_PublicId").IsUnique();
+
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.DeletedDate).HasColumnType("datetime");
             entity.Property(e => e.DueDate).HasColumnType("datetime");
             entity.Property(e => e.Fine)
                 .HasDefaultValue(0m)
@@ -83,7 +100,11 @@ public partial class LibraryContext : DbContext
             entity.Property(e => e.LoanDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.PublicId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.ReturnDate).HasColumnType("datetime");
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
 
             entity.HasOne(d => d.Book).WithMany(p => p.Loans)
@@ -104,18 +125,25 @@ public partial class LibraryContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Users__3214EC079CB821BF");
 
+            entity.HasIndex(e => e.PublicId, "IX_Users_PublicId").IsUnique();
+
             entity.HasIndex(e => e.Email, "UQ__Users__A9D10534C0491EB9").IsUnique();
 
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.DeletedDate).HasColumnType("datetime");
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.FullName).HasMaxLength(100);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.PasswordHash).HasMaxLength(500);
+            entity.Property(e => e.PublicId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.RefreshToken).HasMaxLength(500);
             entity.Property(e => e.RefreshTokenExpiryTime).HasColumnType("datetime");
             entity.Property(e => e.Role).HasMaxLength(50);
+            entity.Property(e => e.RowVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken();
             entity.Property(e => e.TwoFactorSecretKey).HasMaxLength(255);
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
         });

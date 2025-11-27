@@ -27,7 +27,7 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Yeni kullanıcı kaydı
         /// </summary>
-        [EnableRateLimiting("register")]  // ← EKLENDI
+        [EnableRateLimiting("register")] 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
@@ -47,7 +47,7 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kullanıcı girişi
         /// </summary>
-        [EnableRateLimiting("login")]  // ← EKLENDI
+        [EnableRateLimiting("login")]  
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
@@ -202,7 +202,7 @@ namespace LibraryManagement.Controllers
                         email = user.Email,
                         twoFactorEnabled = user.TwoFactorEnabled,
                         hasSecretKey = !string.IsNullOrEmpty(user.TwoFactorSecretKey),
-                        secretKey = user.TwoFactorSecretKey, // ⚠️ Sadece test için!
+                        secretKey = user.TwoFactorSecretKey, // Sadece test için!
                         codeToValidate = code
                     }
                 });

@@ -46,25 +46,25 @@ namespace Infrastructure.Interceptors
             {
                 var user = entry.Entity;
 
-                // ✅ Email şifrele (eğer henüz şifrelenmemişse)
+                //  Email şifrele (eğer henüz şifrelenmemişse)
                 if (!string.IsNullOrEmpty(user.Email) && !IsEncrypted(user.Email))
                 {
                     user.Email = _encryptionService.Encrypt(user.Email);
                 }
 
-                // ✅ FullName şifrele (eğer henüz şifrelenmemişse)
+                //  FullName şifrele (eğer henüz şifrelenmemişse)
                 if (!string.IsNullOrEmpty(user.FullName) && !IsEncrypted(user.FullName))
                 {
                     user.FullName = _encryptionService.Encrypt(user.FullName);
                 }
 
-                // ✅ TwoFactorSecretKey şifrele (eğer henüz şifrelenmemişse)
+                //  TwoFactorSecretKey şifrele (eğer henüz şifrelenmemişse)
                 if (!string.IsNullOrEmpty(user.TwoFactorSecretKey) && !IsEncrypted(user.TwoFactorSecretKey))
                 {
                     user.TwoFactorSecretKey = _encryptionService.Encrypt(user.TwoFactorSecretKey);
                 }
 
-                // ✅ RefreshToken şifrele (eğer henüz şifrelenmemişse)
+                //  RefreshToken şifrele (eğer henüz şifrelenmemişse)
                 if (!string.IsNullOrEmpty(user.RefreshToken) && !IsEncrypted(user.RefreshToken))
                 {
                     user.RefreshToken = _encryptionService.Encrypt(user.RefreshToken);
@@ -74,7 +74,11 @@ namespace Infrastructure.Interceptors
 
         private bool IsEncrypted(string value)
         {
-            // Base64 formatında mı kontrol et (şifreli veriler Base64)
+            // Email pattern check - @ içeriyorsa düz email'dir
+            if (value.Contains("@") && value.Contains("."))
+                return false; // Düz email, şifrelenmemiş
+
+            // Base64 formatında mı kontrol et
             if (string.IsNullOrEmpty(value) || value.Length < 20)
                 return false;
 

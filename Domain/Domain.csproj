@@ -7,12 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Entities\Loan.Extensions.cs" />
     <Compile Remove="Entities\User.Extensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Entities\Loan.Extensions.cs" />
     <None Include="Entities\User.Extensions.cs" />
   </ItemGroup>
 
@@ -26,6 +24,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\" />
   </ItemGroup>
 
 </Project>

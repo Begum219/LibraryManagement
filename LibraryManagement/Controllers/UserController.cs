@@ -5,6 +5,8 @@ using Domain.Entities;
 using System.Security.Claims;
 using BCrypt.Net;
 using LibraryManagement.Application.Interfaces.Services;
+using Microsoft.EntityFrameworkCore;
+using Application.DTOs.User;
 
 namespace LibraryManagement.Controllers
 {
@@ -25,30 +27,113 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Tüm kullanıcıları listele (Admin)
+        /// Tüm kullanıcıları listele (Pagination + Search - Admin)
         /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? role = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string sortBy = "CreatedDate",
+            [FromQuery] string sortOrder = "desc")
         {
             try
             {
-                var users = await _unitOfWork.Users.GetAllAsync();
+                // Pagination validasyonu
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
 
-                // Şifreleri gizle, PublicId göster
-                var usersWithoutPasswords = users.Select(u => new
+                // Base query
+                var query = _unitOfWork.Users.GetAll();
+
+                // SEARCH FİLTRESİ
+                if (!string.IsNullOrWhiteSpace(search))
                 {
-                    u.PublicId,
-                    u.Email,
-                    u.FullName,
-                    u.Role,
-                    u.CreatedDate,
-                    u.UpdatedDate,
-                    u.IsActive,
-                    u.TwoFactorEnabled
-                });
+                    search = search.Trim().ToLower();
+                    query = query.Where(u =>
+                        u.Email.ToLower().Contains(search) ||
+                        u.FullName.ToLower().Contains(search)
+                    );
+                }
 
-                return Ok(new { success = true, data = usersWithoutPasswords });
+                // ROL FİLTRESİ
+                if (!string.IsNullOrWhiteSpace(role))
+                {
+                    query = query.Where(u => u.Role == role);
+                }
+
+                // AKTİFLİK FİLTRESİ
+                if (isActive.HasValue)
+                {
+                    query = query.Where(u => u.IsActive == isActive.Value);
+                }
+
+                // SIRALAMA
+                query = sortBy.ToLower() switch
+                {
+                    "email" => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(u => u.Email)
+                        : query.OrderByDescending(u => u.Email),
+
+                    "fullname" => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(u => u.FullName)
+                        : query.OrderByDescending(u => u.FullName),
+
+                    "role" => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(u => u.Role)
+                        : query.OrderByDescending(u => u.Role),
+
+                    "createddate" or _ => sortOrder.ToLower() == "asc"
+                        ? query.OrderBy(u => u.CreatedDate)
+                        : query.OrderByDescending(u => u.CreatedDate)
+                };
+
+                // Toplam kayıt sayısı (filtrelenmiş)
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+                // Sayfalama
+                var pagedUsers = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(u => new
+                    {
+                        u.PublicId,
+                        u.Email,
+                        u.FullName,
+                        u.Role,
+                        u.CreatedDate,
+                        u.UpdatedDate,
+                        u.IsActive
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    data = pagedUsers,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages,
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < totalPages
+                    },
+                    filters = new
+                    {
+                        search,
+                        role,
+                        isActive,
+                        sortBy,
+                        sortOrder
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -76,7 +161,7 @@ namespace LibraryManagement.Controllers
                 var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
                 var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // 3. ✅ IDOR KONTROLÜ: Sadece kendi profili veya Admin
+                // 3.  IDOR KONTROLÜ: Sadece kendi profili veya Admin
                 if (user.Id != currentUserId && currentUserRole != "Admin")
                 {
                     _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının profiline erişmeye çalıştı: {TargetUserId}",
@@ -195,7 +280,25 @@ namespace LibraryManagement.Controllers
                 user.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Users.Update(user);
-                await _unitOfWork.SaveChangesAsync();
+
+                // CONCURRENCY EXCEPTION YAKALA
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Concurrency conflict: User {UserId} modified by another process",
+                        userId);
+
+                    return Conflict(new
+                    {
+                        success = false,
+                        message = "Profiliniz başka bir işlem tarafından güncellenmiş. Lütfen sayfayı yenileyin.",
+                        errorCode = "CONCURRENCY_CONFLICT"
+                    });
+                }
 
                 await _cacheService.RemoveAsync($"user:profile:{userId}");
                 await _cacheService.RemoveAsync($"user:{userId}:profile");
@@ -328,7 +431,7 @@ namespace LibraryManagement.Controllers
                 if (currentUserId == user.Id)
                     return BadRequest(new { success = false, message = "Kendi hesabınızı silemezsiniz" });
 
-                // ✅ Soft Delete (kim sildi bilgisi ile)
+                //  Soft Delete (kim sildi bilgisi ile)
                 await _unitOfWork.Users.SoftDeleteAsync(user, currentUserId);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -436,20 +539,4 @@ namespace LibraryManagement.Controllers
 
     }
 
-    // DTOs
-    public class UpdateProfileDto
-    {
-        public string FullName { get; set; } = null!;
-    }
-
-    public class ChangePasswordDto
-    {
-        public string OldPassword { get; set; } = null!;
-        public string NewPassword { get; set; } = null!;
-    }
-
-    public class ChangeRoleDto
-    {
-        public string NewRole { get; set; } = null!;
-    }
 }

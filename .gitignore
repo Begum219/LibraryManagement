@@ -38,8 +38,9 @@ artifacts/
 # Sensitive configuration files
 appsettings.Development.json
 appsettings.Production.json
+appsettings.json
 **/appsettings.*.json
-!appsettings.json
+
 
 # Database files
 *.mdf

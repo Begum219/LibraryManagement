@@ -2,6 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using LibraryManagement.Application.DTOs.Category;  
 
 namespace LibraryManagement.Controllers
 {
@@ -19,15 +22,51 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Tüm kategorileri listele
+        /// Tüm kategorileri listele (Pagination ile)
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetAllCategories()
+        public async Task<IActionResult> GetAllCategories([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                return Ok(new { success = true, data = categories });
+                // Parametre kontrolü
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
+
+                // IQueryable - Veritabanında sayfalama
+                var query = _unitOfWork.Categories.GetAll();
+                var totalCount = await query.CountAsync();
+
+                var pagedCategories = await query
+                    .OrderBy(c => c.Name)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new
+                    {
+                        c.PublicId,
+                        c.Name,
+                        c.Description,
+                        c.IsActive,
+                        c.CreatedDate,
+                        c.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    data = pagedCategories,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -37,24 +76,37 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// ID'ye göre kategori getir
+        /// PublicId ile kategori getir
         /// </summary>
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetCategoryById(int id)
+        [HttpGet("{publicId:guid}")]
+        public async Task<IActionResult> GetCategoryByPublicId(Guid publicId)
         {
             try
             {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                var category = categories.FirstOrDefault(c => c.Id == id);
+                var query = _unitOfWork.Categories.GetAll();
+                var category = await query.FirstOrDefaultAsync(c => c.PublicId == publicId);
 
                 if (category == null)
                     return NotFound(new { success = false, message = "Kategori bulunamadı" });
 
-                return Ok(new { success = true, data = category });
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        category.PublicId,
+                        category.Name,
+                        category.Description,
+                        category.IsActive,
+                        category.CreatedDate,
+                        category.UpdatedDate,
+                        category.RowVersion
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kategori getirilirken hata oluştu: {CategoryId}", id);
+                _logger.LogError(ex, "Kategori getirilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -64,18 +116,36 @@ namespace LibraryManagement.Controllers
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] Category category)
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
         {
             try
             {
-                category.CreatedDate = DateTime.UtcNow;
-                category.IsActive = true;
+                var category = new Category
+                {
+                    PublicId = Guid.NewGuid(),
+                    Name = dto.Name,
+                    Description = dto.Description,
+                    CreatedDate = DateTime.UtcNow,
+                    IsActive = true
+                };
 
                 await _unitOfWork.Categories.AddAsync(category);
                 await _unitOfWork.SaveChangesAsync();
 
                 _logger.LogInformation("Yeni kategori eklendi: {CategoryName}", category.Name);
-                return Ok(new { success = true, data = category, message = "Kategori başarıyla eklendi" });
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        category.PublicId,
+                        category.Name,
+                        category.Description,
+                        category.RowVersion
+                    },
+                    message = "Kategori başarıyla eklendi"
+                });
             }
             catch (Exception ex)
             {
@@ -85,34 +155,69 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kategori güncelle (Admin/Librarian)
+        /// Kategori güncelle (Admin/Librarian - Optimistic Locking)
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
+        [HttpPut("{publicId:guid}")]
+        public async Task<IActionResult> UpdateCategory(Guid publicId, [FromBody] UpdateCategoryDto dto)
         {
             try
             {
-                var categories = await _unitOfWork.Categories.GetAllAsync();
-                var existingCategory = categories.FirstOrDefault(c => c.Id == id);
+                var query = _unitOfWork.Categories.GetAll();
+                var existingCategory = await query.FirstOrDefaultAsync(c => c.PublicId == publicId);
 
                 if (existingCategory == null)
                     return NotFound(new { success = false, message = "Kategori bulunamadı" });
 
+                // RowVersion kontrolü (Optimistic Locking)
+                if (dto.RowVersion != null)
+                {
+                    _unitOfWork.SetOriginalRowVersion(existingCategory, dto.RowVersion);
+                }
+
                 // Güncelleme
-                existingCategory.Name = category.Name;
-                existingCategory.Description = category.Description;
+                existingCategory.Name = dto.Name;
+                existingCategory.Description = dto.Description;
                 existingCategory.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Categories.Update(existingCategory);
-                await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Kategori güncellendi: {CategoryId}", id);
-                return Ok(new { success = true, data = existingCategory, message = "Kategori başarıyla güncellendi" });
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Concurrency conflict: Category {PublicId} modified by another user",
+                        publicId);
+
+                    return Conflict(new
+                    {
+                        success = false,
+                        message = "Bu kategori başka bir kullanıcı tarafından güncellenmiş.",
+                        errorCode = "CONCURRENCY_CONFLICT"
+                    });
+                }
+
+                _logger.LogInformation("Kategori güncellendi: {PublicId}", publicId);
+
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        existingCategory.PublicId,
+                        existingCategory.Name,
+                        existingCategory.Description,
+                        existingCategory.RowVersion
+                    },
+                    message = "Kategori başarıyla güncellendi"
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kategori güncellenirken hata oluştu: {CategoryId}", id);
+                _logger.LogError(ex, "Kategori güncellenirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
@@ -120,29 +225,22 @@ namespace LibraryManagement.Controllers
         /// <summary>
         /// Kategori sil (soft delete - Admin)
         /// </summary>
-        /// <summary>
-        /// Kategori sil (soft delete - Admin)
-        /// </summary>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        [HttpDelete("{publicId:guid}")]
+        public async Task<IActionResult> DeleteCategory(Guid publicId)
         {
             try
             {
-                // ✅ Tüm claim'leri logla (debug için)
-                _logger.LogInformation("=== Token Claims Debug ===");
-                foreach (var claim in User.Claims)
-                {
-                    _logger.LogInformation("Claim Type: {Type}, Value: {Value}", claim.Type, claim.Value);
-                }
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-                var category = await _unitOfWork.Categories.GetByIdAsync(id);
+                var query = _unitOfWork.Categories.GetAll();
+                var category = await query.FirstOrDefaultAsync(c => c.PublicId == publicId);
 
                 if (category == null)
                     return NotFound(new { success = false, message = "Kategori bulunamadı" });
 
                 // Kategoriye ait kitap var mı kontrol et
-                var booksInCategory = await _unitOfWork.Books.GetBooksByCategoryAsync(id);
+                var booksInCategory = await _unitOfWork.Books.GetBooksByCategoryAsync(category.Id);
                 if (booksInCategory.Any())
                 {
                     return BadRequest(new
@@ -152,104 +250,108 @@ namespace LibraryManagement.Controllers
                     });
                 }
 
-                // ✅ Farklı claim tiplerini dene
-                int deletedBy = 0;
+                //  SoftDeleteAsync metodunu kullan
+                await _unitOfWork.Categories.SoftDeleteAsync(category, currentUserId);
+                await _unitOfWork.SaveChangesAsync();
 
-                // Tüm olası claim tiplerini kontrol et
-                var possibleClaims = new[]
-                {
-            "UserId",
-            "Id",
-            "id",
-            "UserID",
-            "userid",
-            "user_id",
-            System.Security.Claims.ClaimTypes.NameIdentifier,
-            "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
-            "sub",
-            "nameid"
-        };
+                _logger.LogInformation("Kategori silindi: {PublicId}, DeletedBy={DeletedBy}",
+                    publicId, currentUserId);
 
-                foreach (var claimType in possibleClaims)
-                {
-                    var claim = User.Claims.FirstOrDefault(c => c.Type == claimType);
-                    if (claim != null && int.TryParse(claim.Value, out deletedBy))
-                    {
-                        _logger.LogInformation("UserId claim bulundu! Type: {Type}, Value: {Value}", claimType, deletedBy);
-                        break;
-                    }
-                }
-
-                if (deletedBy == 0)
-                {
-                    _logger.LogWarning("⚠️ UserId claim'i bulunamadı! Token yapısını kontrol edin.");
-                }
-
-                // ✅ SoftDeleteAsync metodunu kullan
-                await _unitOfWork.Categories.SoftDeleteAsync(category, deletedBy);
-
-                // ✅ Değişiklikleri kaydet
-                var result = await _unitOfWork.SaveChangesAsync();
-
-                if (result <= 0)
-                {
-                    return BadRequest(new { success = false, message = "Değişiklikler kaydedilemedi" });
-                }
-
-                _logger.LogInformation("Kategori silindi (soft delete): CategoryId={CategoryId}, DeletedBy={DeletedBy}", id, deletedBy);
-
-                return Ok(new
-                {
-                    success = true,
-                    message = "Kategori başarıyla silindi",
-                    debugInfo = new { deletedBy = deletedBy } // Debug için
-                });
+                return Ok(new { success = true, message = "Kategori başarıyla silindi" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kategori silinirken hata oluştu: {CategoryId}", id);
+                _logger.LogError(ex, "Kategori silinirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
-
 
         /// <summary>
         /// Kategorideki kitap sayısı
         /// </summary>
-        [HttpGet("{id}/book-count")]
-        public async Task<IActionResult> GetBookCount(int id)
+        [HttpGet("{publicId:guid}/book-count")]
+        public async Task<IActionResult> GetBookCount(Guid publicId)
         {
             try
             {
-                var books = await _unitOfWork.Books.GetBooksByCategoryAsync(id);
+                var query = _unitOfWork.Categories.GetAll();
+                var category = await query.FirstOrDefaultAsync(c => c.PublicId == publicId);
+
+                if (category == null)
+                    return NotFound(new { success = false, message = "Kategori bulunamadı" });
+
+                var books = await _unitOfWork.Books.GetBooksByCategoryAsync(category.Id);
                 var count = books.Count();
 
-                return Ok(new { success = true, data = new { categoryId = id, bookCount = count } });
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        categoryPublicId = publicId,
+                        categoryName = category.Name,
+                        bookCount = count
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kategori kitap sayısı getirilirken hata oluştu: {CategoryId}", id);
+                _logger.LogError(ex, "Kategori kitap sayısı getirilirken hata oluştu: {PublicId}", publicId);
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
 
         /// <summary>
-        /// Kategori arama
+        /// Kategori arama (Pagination ile)
         /// </summary>
         [HttpGet("search")]
-        public async Task<IActionResult> SearchCategories([FromQuery] string query)
+        public async Task<IActionResult> SearchCategories(
+            [FromQuery] string query,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(query))
                     return BadRequest(new { success = false, message = "Arama kelimesi gerekli" });
 
-                var categories = await _unitOfWork.Categories.FindAsync(c =>
-                    c.Name.Contains(query) ||
-                    (c.Description != null && c.Description.Contains(query))
-                );
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
 
-                return Ok(new { success = true, data = categories });
+                var searchQuery = _unitOfWork.Categories.GetAll()
+                    .Where(c => c.Name.Contains(query) ||
+                               (c.Description != null && c.Description.Contains(query)));
+
+                var totalCount = await searchQuery.CountAsync();
+
+                var categories = await searchQuery
+                    .OrderBy(c => c.Name)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(c => new
+                    {
+                        c.PublicId,
+                        c.Name,
+                        c.Description,
+                        c.IsActive
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    success = true,
+                    data = categories,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
+                });
             }
             catch (Exception ex)
             {

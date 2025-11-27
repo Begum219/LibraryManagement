@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using System.Security.Claims;
 using LibraryManagement.Application.Interfaces.Services;
+using Microsoft.EntityFrameworkCore;
+using LibraryManagement.Application.DTOs.Loan;
+using LibraryManagement.Application.DTOs.Common;  
 
 namespace LibraryManagement.Controllers
 {
@@ -24,30 +27,55 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Tüm ödünç kayıtlarını listele (Admin/Librarian)
+        /// Tüm ödünç kayıtlarını listele (Pagination ile - Admin/Librarian)
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpGet]
-        public async Task<IActionResult> GetAllLoans()
+        public async Task<IActionResult> GetAllLoans([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var loans = await _unitOfWork.Loans.GetAllAsync();
+                // Parametre kontrolü
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
 
-                // PublicId göster
-                var loansWithPublicId = loans.Select(l => new
+                // IQueryable - Veritabanında sayfalama
+                var query = _unitOfWork.Loans.GetAll();
+                var totalCount = await query.CountAsync();
+
+                var pagedLoans = await query
+                    .OrderByDescending(l => l.LoanDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.PublicId,
+                        l.UserId,
+                        l.BookId,
+                        l.LoanDate,
+                        l.DueDate,
+                        l.ReturnDate,
+                        l.IsReturned,
+                        l.Fine,
+                        l.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
                 {
-                    l.PublicId,  // ← Id yerine
-                    l.UserId,
-                    l.BookId,
-                    l.LoanDate,
-                    l.DueDate,
-                    l.ReturnDate,
-                    l.IsReturned,
-                    l.Fine
+                    success = true,
+                    data = pagedLoans,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
                 });
-
-                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {
@@ -90,17 +118,15 @@ namespace LibraryManagement.Controllers
         {
             try
             {
-                // 1. PublicId'den loan'ı bul
                 var loan = await _unitOfWork.Loans.GetLoanWithDetailsByPublicIdAsync(publicId);
 
                 if (loan == null)
                     return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
 
-                // 2. Token'dan mevcut kullanıcıyı al
                 var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
                 var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // 3. ✅ IDOR KONTROLÜ: Sadece kendi ödüncü veya Admin/Librarian
+                // IDOR KONTROLÜ
                 if (loan.UserId != currentUserId &&
                     currentUserRole != "Admin" &&
                     currentUserRole != "Librarian")
@@ -110,7 +136,22 @@ namespace LibraryManagement.Controllers
                     return Forbid();
                 }
 
-                return Ok(new { success = true, data = loan });
+                return Ok(new
+                {
+                    success = true,
+                    data = new
+                    {
+                        loan.PublicId,
+                        loan.UserId,
+                        loan.BookId,
+                        loan.LoanDate,
+                        loan.DueDate,
+                        loan.ReturnDate,
+                        loan.IsReturned,
+                        loan.Fine,
+                        loan.RowVersion
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -120,29 +161,54 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kullanıcının aktif ödünçlerini getir
+        /// Kullanıcının aktif ödünçlerini getir (Pagination ile)
         /// </summary>
         [HttpGet("my-loans")]
-        public async Task<IActionResult> GetMyLoans()
+        public async Task<IActionResult> GetMyLoans([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
+
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var myLoans = allLoans.Where(l => l.UserId == userId && l.IsReturned != true).ToList();
 
-                // PublicId göster
-                var loansWithPublicId = myLoans.Select(l => new
+                var query = _unitOfWork.Loans.GetAll()
+                    .Where(l => l.UserId == userId && l.IsReturned != true);
+
+                var totalCount = await query.CountAsync();
+
+                var myLoans = await query
+                    .OrderByDescending(l => l.LoanDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.PublicId,
+                        l.BookId,
+                        l.LoanDate,
+                        l.DueDate,
+                        l.IsReturned,
+                        l.Fine,
+                        l.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
                 {
-                    l.PublicId,
-                    l.BookId,
-                    l.LoanDate,
-                    l.DueDate,
-                    l.IsReturned,
-                    l.Fine
+                    success = true,
+                    data = myLoans,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
                 });
-
-                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {
@@ -152,29 +218,54 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kullanıcının geçmiş ödünçlerini getir
+        /// Kullanıcının geçmiş ödünçlerini getir (Pagination ile)
         /// </summary>
         [HttpGet("my-history")]
-        public async Task<IActionResult> GetMyHistory()
+        public async Task<IActionResult> GetMyHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
+
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var myHistory = allLoans.Where(l => l.UserId == userId && l.IsReturned == true).ToList();
 
-                // PublicId göster
-                var historyWithPublicId = myHistory.Select(l => new
+                var query = _unitOfWork.Loans.GetAll()
+                    .Where(l => l.UserId == userId && l.IsReturned == true);
+
+                var totalCount = await query.CountAsync();
+
+                var myHistory = await query
+                    .OrderByDescending(l => l.ReturnDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.PublicId,
+                        l.BookId,
+                        l.LoanDate,
+                        l.DueDate,
+                        l.ReturnDate,
+                        l.Fine,
+                        l.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
                 {
-                    l.PublicId,
-                    l.BookId,
-                    l.LoanDate,
-                    l.DueDate,
-                    l.ReturnDate,
-                    l.Fine
+                    success = true,
+                    data = myHistory,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
                 });
-
-                return Ok(new { success = true, data = historyWithPublicId });
             }
             catch (Exception ex)
             {
@@ -184,32 +275,53 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Gecikmiş ödünçleri listele (Admin/Librarian)
+        /// Gecikmiş ödünçleri listele (Pagination ile - Admin/Librarian)
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpGet("overdue")]
-        public async Task<IActionResult> GetOverdueLoans()
+        public async Task<IActionResult> GetOverdueLoans([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var overdueLoans = allLoans.Where(l =>
-                    l.IsReturned != true &&
-                    l.DueDate < DateTime.UtcNow
-                ).ToList();
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
 
-                // PublicId göster
-                var overdueWithPublicId = overdueLoans.Select(l => new
+                var query = _unitOfWork.Loans.GetAll()
+                    .Where(l => l.IsReturned != true && l.DueDate < DateTime.UtcNow);
+
+                var totalCount = await query.CountAsync();
+
+                var overdueLoans = await query
+                    .OrderBy(l => l.DueDate)  // En eski gecikme önce
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.PublicId,
+                        l.UserId,
+                        l.BookId,
+                        l.LoanDate,
+                        l.DueDate,
+                        DaysOverdue = (DateTime.UtcNow - l.DueDate).Days,
+                        l.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
                 {
-                    l.PublicId,
-                    l.UserId,
-                    l.BookId,
-                    l.LoanDate,
-                    l.DueDate,
-                    DaysOverdue = (DateTime.UtcNow - l.DueDate).Days
+                    success = true,
+                    data = overdueLoans,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
                 });
-
-                return Ok(new { success = true, data = overdueWithPublicId });
             }
             catch (Exception ex)
             {
@@ -228,16 +340,13 @@ namespace LibraryManagement.Controllers
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-                // Kitap kontrolü
                 var book = await _unitOfWork.Books.GetBookWithDetailsAsync(bookId);
                 if (book == null)
                     return NotFound(new { success = false, message = "Kitap bulunamadı" });
 
-                // Müsaitlik kontrolü
                 if ((book.AvailableCopies ?? 0) <= 0)
                     return BadRequest(new { success = false, message = "Bu kitap şu anda müsait değil" });
 
-                // Kullanıcının aynı kitabı zaten ödünç almış mı kontrolü
                 var allLoans = await _unitOfWork.Loans.GetAllAsync();
                 var hasActiveLoans = allLoans.Any(l =>
                     l.UserId == userId &&
@@ -248,10 +357,9 @@ namespace LibraryManagement.Controllers
                 if (hasActiveLoans)
                     return BadRequest(new { success = false, message = "Bu kitabı zaten ödünç almışsınız" });
 
-                // Ödünç kaydı oluştur
                 var loan = new Loan
                 {
-                    PublicId = Guid.NewGuid(),  // ← YENİ GUID
+                    PublicId = Guid.NewGuid(),
                     BookId = bookId,
                     UserId = userId,
                     LoanDate = DateTime.UtcNow,
@@ -264,14 +372,11 @@ namespace LibraryManagement.Controllers
 
                 await _unitOfWork.Loans.AddAsync(loan);
 
-                // Kitap stok güncelleme
                 book.AvailableCopies = (book.AvailableCopies ?? 0) - 1;
                 book.UpdatedDate = DateTime.UtcNow;
                 _unitOfWork.Books.Update(book);
 
                 await _unitOfWork.SaveChangesAsync();
-
-                // Cache temizle
                 await _cacheService.RemoveAsync("loans:statistics");
 
                 _logger.LogInformation("Kitap ödünç alındı: UserId={UserId}, BookId={BookId}", userId, bookId);
@@ -281,9 +386,10 @@ namespace LibraryManagement.Controllers
                     success = true,
                     data = new
                     {
-                        loan.PublicId,  // ← Id yerine PublicId döndür
+                        loan.PublicId,
                         loan.LoanDate,
-                        loan.DueDate
+                        loan.DueDate,
+                        loan.RowVersion
                     },
                     message = "Kitap başarıyla ödünç alındı"
                 });
@@ -296,23 +402,22 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Kitap iade et (PublicId ile + IDOR korumalı)
+        /// Kitap iade et (DTO kullanarak - Optimistic Locking)
         /// </summary>
         [HttpPost("return/{publicId}")]
-        public async Task<IActionResult> ReturnBook(Guid publicId)
+        public async Task<IActionResult> ReturnBook(Guid publicId, [FromBody] ReturnBookDto dto)  // ✅ DTO
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-                // PublicId'den loan'ı bul
                 var loan = await _unitOfWork.Loans.GetByPublicIdAsync(publicId);
 
                 if (loan == null)
                     return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
 
-                // ✅ IDOR KONTROLÜ: Admin/Librarian değilse sadece kendi ödüncünü iade edebilir
+                // IDOR KONTROLÜ
                 if (userRole != "Admin" && userRole != "Librarian" && loan.UserId != userId)
                 {
                     _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının ödüncünü iade etmeye çalıştı: {LoanId}",
@@ -320,16 +425,21 @@ namespace LibraryManagement.Controllers
                     return Forbid();
                 }
 
-                // Zaten iade edilmiş mi kontrolü
                 if (loan.IsReturned == true)
                     return BadRequest(new { success = false, message = "Bu kitap zaten iade edilmiş" });
+
+                // RowVersion kontrolü (Optimistic Locking)
+                if (dto?.RowVersion != null && dto.RowVersion.Length > 0)
+                {
+                    _unitOfWork.SetOriginalRowVersion(loan, dto.RowVersion);
+                }
 
                 // İade işlemi
                 loan.ReturnDate = DateTime.UtcNow;
                 loan.IsReturned = true;
                 loan.UpdatedDate = DateTime.UtcNow;
 
-                // Gecikme cezası hesapla (günlük 2 TL)
+                // Gecikme cezası hesapla
                 if (loan.DueDate < DateTime.UtcNow)
                 {
                     var daysLate = (DateTime.UtcNow - loan.DueDate).Days;
@@ -339,7 +449,7 @@ namespace LibraryManagement.Controllers
                 _unitOfWork.Loans.Update(loan);
 
                 // Kitap stok güncelleme
-                var book = await _unitOfWork.Books.GetBookWithDetailsAsync(loan.BookId ?? 0);
+                var book = await _unitOfWork.Books.GetByIdAsync(loan.BookId ?? 0);
                 if (book != null)
                 {
                     book.AvailableCopies = (book.AvailableCopies ?? 0) + 1;
@@ -347,9 +457,25 @@ namespace LibraryManagement.Controllers
                     _unitOfWork.Books.Update(book);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
+                // CONCURRENCY EXCEPTION YAKALA
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Concurrency conflict: Loan {LoanPublicId} or Book modified by another process",
+                        publicId);
 
-                // Cache temizle
+                    return Conflict(new
+                    {
+                        success = false,
+                        message = "Bu kayıt başka bir işlem tarafından güncellenmiş. Lütfen sayfayı yenileyin.",
+                        errorCode = "CONCURRENCY_CONFLICT"
+                    });
+                }
+
                 await _cacheService.RemoveAsync("loans:statistics");
 
                 _logger.LogInformation("Kitap iade edildi: LoanId={LoanId}, Fine={Fine}", loan.Id, loan.Fine);
@@ -361,7 +487,8 @@ namespace LibraryManagement.Controllers
                     {
                         loan.PublicId,
                         loan.ReturnDate,
-                        loan.Fine
+                        loan.Fine,
+                        loan.RowVersion
                     },
                     message = (loan.Fine ?? 0) > 0
                         ? $"Kitap iade edildi. Gecikme cezası: {loan.Fine} TL"
@@ -376,22 +503,21 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Ödünç süresini uzat (PublicId ile + IDOR korumalı)
+        /// Ödünç süresini uzat (DTO kullanarak - Optimistic Locking)
         /// </summary>
         [HttpPost("renew/{publicId}")]
-        public async Task<IActionResult> RenewLoan(Guid publicId)
+        public async Task<IActionResult> RenewLoan(Guid publicId, [FromBody] RenewLoanDto dto)  
         {
             try
             {
                 var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
-                // PublicId'den loan'ı bul
                 var loan = await _unitOfWork.Loans.GetByPublicIdAsync(publicId);
 
                 if (loan == null)
                     return NotFound(new { success = false, message = "Ödünç kaydı bulunamadı" });
 
-                // ✅ IDOR KONTROLÜ: Sadece kendi ödüncünü yenileyebilir
+                // IDOR KONTROLÜ
                 if (loan.UserId != userId)
                 {
                     _logger.LogWarning("IDOR denemesi: Kullanıcı {CurrentUserId} başkasının ödüncünü yenilemeye çalıştı: {LoanId}",
@@ -399,20 +525,41 @@ namespace LibraryManagement.Controllers
                     return Forbid();
                 }
 
-                // İade edilmiş mi kontrolü
                 if (loan.IsReturned == true)
                     return BadRequest(new { success = false, message = "İade edilmiş kitaplar yenilenemez" });
 
-                // Gecikmiş mi kontrolü
                 if (loan.DueDate < DateTime.UtcNow)
                     return BadRequest(new { success = false, message = "Gecikmiş kitaplar yenilenemez. Önce iade edin." });
 
-                // Süre uzatma (14 gün daha)
+                // RowVersion kontrolü (Optimistic Locking)
+                if (dto?.RowVersion != null && dto.RowVersion.Length > 0)
+                {
+                    _unitOfWork.SetOriginalRowVersion(loan, dto.RowVersion);
+                }
+
+                // Süre uzatma
                 loan.DueDate = loan.DueDate.AddDays(14);
                 loan.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Loans.Update(loan);
-                await _unitOfWork.SaveChangesAsync();
+
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Concurrency conflict: Loan {LoanPublicId} modified by another process",
+                        publicId);
+
+                    return Conflict(new
+                    {
+                        success = false,
+                        message = "Bu kayıt başka bir işlem tarafından güncellenmiş. Lütfen sayfayı yenileyin.",
+                        errorCode = "CONCURRENCY_CONFLICT"
+                    });
+                }
 
                 _logger.LogInformation("Ödünç süresi uzatıldı: LoanId={LoanId}", loan.Id);
 
@@ -422,7 +569,8 @@ namespace LibraryManagement.Controllers
                     data = new
                     {
                         loan.PublicId,
-                        loan.DueDate
+                        loan.DueDate,
+                        loan.RowVersion
                     },
                     message = "Ödünç süresi 14 gün uzatıldı"
                 });
@@ -435,30 +583,54 @@ namespace LibraryManagement.Controllers
         }
 
         /// <summary>
-        /// Belirli kullanıcının ödünçlerini getir (Admin/Librarian)
+        /// Belirli kullanıcının ödünçlerini getir (Pagination ile - Admin/Librarian)
         /// </summary>
         [Authorize(Roles = "Admin,Librarian")]
         [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetUserLoans(int userId)
+        public async Task<IActionResult> GetUserLoans(int userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var allLoans = await _unitOfWork.Loans.GetAllAsync();
-                var userLoans = allLoans.Where(l => l.UserId == userId).ToList();
+                if (page < 1) page = 1;
+                if (pageSize < 1) pageSize = 10;
+                if (pageSize > 100) pageSize = 100;
 
-                // PublicId göster
-                var loansWithPublicId = userLoans.Select(l => new
+                var query = _unitOfWork.Loans.GetAll()
+                    .Where(l => l.UserId == userId);
+
+                var totalCount = await query.CountAsync();
+
+                var userLoans = await query
+                    .OrderByDescending(l => l.LoanDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(l => new
+                    {
+                        l.PublicId,
+                        l.BookId,
+                        l.LoanDate,
+                        l.DueDate,
+                        l.ReturnDate,
+                        l.IsReturned,
+                        l.Fine,
+                        l.RowVersion
+                    })
+                    .ToListAsync();
+
+                return Ok(new
                 {
-                    l.PublicId,
-                    l.BookId,
-                    l.LoanDate,
-                    l.DueDate,
-                    l.ReturnDate,
-                    l.IsReturned,
-                    l.Fine
+                    success = true,
+                    data = userLoans,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        totalCount,
+                        totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                        hasPreviousPage = page > 1,
+                        hasNextPage = page < (int)Math.Ceiling(totalCount / (double)pageSize)
+                    }
                 });
-
-                return Ok(new { success = true, data = loansWithPublicId });
             }
             catch (Exception ex)
             {

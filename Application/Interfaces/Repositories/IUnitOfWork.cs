@@ -10,6 +10,9 @@ namespace LibraryManagement.Application.Interfaces.UnitOfWork
         IGenericRepository<Category> Categories { get; }
         
         ILoanRepository Loans { get; }
+        void SetOriginalRowVersion<TEntity>(TEntity entity, byte[] rowVersion) where TEntity : class;
+
+        
         Task<int> SaveChangesAsync();
     }
 }

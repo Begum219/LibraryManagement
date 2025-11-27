@@ -9,56 +9,58 @@ using System.Text;
 using Serilog;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using LibraryManagement.Application.Converters;
+using Hangfire;
+using Hangfire.SqlServer;
+using Infrastructure.Jobs;
+using Infrastructure.Hangfire;
+using Application.Interfaces.Services;
+using System.Net.Mail;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ============= RATE LIMITING EKLE =============
+// ============= RATE LIMITING =============
 builder.Services.AddRateLimiter(options =>
 {
-    // 1. GENEL API LİMİTİ - Tüm endpoint'ler için
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.User.Identity?.Name ?? context.Request.Headers.Host.ToString(),
             factory: partition => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 100,                          // Dakikada 100 istek
+                PermitLimit = 100,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
 
-    // 2. LOGIN LİMİTİ - Brute force koruması
     options.AddFixedWindowLimiter("login", opt =>
     {
-        opt.PermitLimit = 5;                                // 5 dakikada 5 istek
+        opt.PermitLimit = 5;
         opt.Window = TimeSpan.FromMinutes(5);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 0;
     });
 
-    // 3. REGISTER LİMİTİ - Spam hesap açmayı önle
     options.AddFixedWindowLimiter("register", opt =>
     {
-        opt.PermitLimit = 3;                                // Saatte 3 kayıt
+        opt.PermitLimit = 3;
         opt.Window = TimeSpan.FromHours(1);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 0;
     });
 
-    // 4. SEARCH LİMİTİ - Arama endpoint'leri
     options.AddFixedWindowLimiter("search", opt =>
     {
-        opt.PermitLimit = 30;                               // Dakikada 30 arama
+        opt.PermitLimit = 30;
         opt.Window = TimeSpan.FromMinutes(1);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 0;
     });
 
-    // Limit aşıldığında ne olacak
     options.OnRejected = async (context, cancellationToken) =>
     {
-        context.HttpContext.Response.StatusCode = 429;      // Too Many Requests
-
+        context.HttpContext.Response.StatusCode = 429;
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
             success = false,
@@ -67,36 +69,36 @@ builder.Services.AddRateLimiter(options =>
         }, cancellationToken);
     };
 });
-// ============= RATE LIMITING BİTİŞ =============
 
-// ✅ GitHub Secrets için Environment Variables
+// ============= ENVIRONMENT VARIABLES =============
 var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("LibraryDB");
 
 var jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
     ?? builder.Configuration["JwtSettings:SecretKey"];
 
-// Override configuration
 builder.Configuration["ConnectionStrings:LibraryDB"] = connectionString;
 builder.Configuration["JwtSettings:SecretKey"] = jwtSecretKey;
-
-// Serilog için connection string override
 builder.Configuration["Serilog:WriteTo:2:Args:connectionString"] = connectionString;
 
-// Serilog Configuration
+// ============= SERILOG =============
 Serilog.Log.Logger = new Serilog.LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// Add services to the container.
-builder.Services.AddControllers();
+// ============= CONTROLLERS =============
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new Base64Converter());
+    });
 
-// Infrastructure Services (DbContext, Repositories, UnitOfWork, Auth Services)
+// ============= INFRASTRUCTURE SERVICES =============
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-// JWT Authentication
+// ============= JWT AUTHENTICATION =============
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -120,7 +122,25 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Swagger Configuration with JWT Support
+// ============= HANGFIRE CONFIGURATION =============
+builder.Services.AddHangfire(config =>
+{
+    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+          .UseSimpleAssemblyNameTypeSerializer()
+          .UseRecommendedSerializerSettings()
+          .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+          {
+              CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+              SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+              QueuePollInterval = TimeSpan.Zero,
+              UseRecommendedIsolationLevel = true,
+              DisableGlobalLocks = true
+          });
+});
+
+builder.Services.AddHangfireServer();
+
+// ============= SWAGGER =============
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -131,7 +151,6 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Kütüphane Yönetim Sistemi API"
     });
 
-    // JWT Authentication için Swagger yapılandırması
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -160,11 +179,10 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Middleware'ler ve sıralaması önemli
+// ============= MIDDLEWARES =============
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -172,24 +190,151 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// ============= RATE LIMITER EKLE =============
-app.UseRateLimiter();  // ← EKLENDI!
-// ============================================
-
-app.UseAuthentication(); // ÖNEMLİ: Authorization'dan ÖNCE gelmeli
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
+
+// ============= HANGFIRE DASHBOARD =============
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthFilter() }
+});
+
+// ============= RECURRING JOB - TEST İÇİN 2 DAKİKADA BİR ============= 
+RecurringJob.AddOrUpdate<OverdueBookJob>(
+    "overdue-book-notifications",
+    job => job.SendOverdueNotifications(),
+    "*/2 * * * *",
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")
+    }
+);
 
 app.MapControllers();
 
+// ============= ADMIN & DEBUG ENDPOINTS =============
+
+// ✅ Email ayarlarını kontrol et
+app.MapGet("/debug-email-settings", (IConfiguration config) =>
+{
+    return Results.Ok(new
+    {
+        SmtpHost = config["EmailSettings:SmtpHost"],
+        SmtpPort = config["EmailSettings:SmtpPort"],
+        EnableSsl = config["EmailSettings:EnableSsl"],
+        Username = config["EmailSettings:Username"],
+        Password = config["EmailSettings:Password"]?.Length > 4
+            ? config["EmailSettings:Password"]?.Substring(0, 4) + "***"
+            : "NULL",
+        FromEmail = config["EmailSettings:FromEmail"],
+        FromName = config["EmailSettings:FromName"]
+    });
+});
+
+// ✅ Direkt SMTP test
+app.MapGet("/test-email", async (IConfiguration config) =>
+{
+    try
+    {
+        using var client = new SmtpClient(
+            config["EmailSettings:SmtpHost"],
+            int.Parse(config["EmailSettings:SmtpPort"])
+        )
+        {
+            EnableSsl = bool.Parse(config["EmailSettings:EnableSsl"]),
+            Credentials = new NetworkCredential(
+                config["EmailSettings:Username"],
+                config["EmailSettings:Password"]
+            ),
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            Timeout = 30000
+        };
+
+        var message = new MailMessage(
+            from: config["EmailSettings:FromEmail"],
+            to: "test@example.com",
+            subject: "Test Email",
+            body: "Bu bir test email'idir."
+        );
+
+        await client.SendMailAsync(message);
+
+        return Results.Ok(new { Success = true, Message = "Email gönderildi!" });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { Success = false, Error = ex.Message, StackTrace = ex.StackTrace });
+    }
+});
+
+// ✅ Tüm user'ları re-encrypt et
+app.MapGet("/admin/re-encrypt-all-users", async (IServiceProvider serviceProvider) =>
+{
+    using var scope = serviceProvider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<LibraryContext>();
+
+    var users = await context.Users.Where(u => !u.IsDeleted).ToListAsync();
+
+    foreach (var user in users)
+    {
+        user.UpdatedDate = DateTime.UtcNow;
+    }
+
+    await context.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        Message = "All users re-encrypted!",
+        Count = users.Count
+    });
+});
+
+// ✅ User 13 ve 14'ü düz text yap ve şifrele
+app.MapGet("/admin/encrypt-users", async (IServiceProvider serviceProvider) =>
+{
+    using var scope = serviceProvider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<LibraryContext>();
+
+    var user13 = await context.Users.FindAsync(13);
+    var user14 = await context.Users.FindAsync(14);
+
+    if (user13 != null)
+    {
+        user13.Email = "user13@test.com";
+        user13.FullName = "User 13";
+        user13.TwoFactorSecretKey = null;
+        user13.RefreshToken = null;
+    }
+
+    if (user14 != null)
+    {
+        user14.Email = "string5@gmail.com";
+        user14.FullName = "Test User";
+        user14.TwoFactorSecretKey = null;
+        user14.RefreshToken = null;
+    }
+
+    await context.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        Message = "Users encrypted!",
+        User13Email = user13?.Email,
+        User14Email = user14?.Email
+    });
+});
+
 try
 {
-    Serilog.Log.Information("Uygulama başlatılıyor...");
+    Serilog.Log.Information("🚀 Uygulama başlatılıyor...");
+    Serilog.Log.Information("📊 Hangfire Dashboard: {HangfireUrl}",
+        $"{(app.Environment.IsDevelopment() ? "https://localhost:7229" : "")}/hangfire");
     app.Run();
 }
 catch (Exception ex)
 {
-    Serilog.Log.Fatal(ex, "Uygulama başlatılamadı!");
+    Serilog.Log.Fatal(ex, "❌ Uygulama başlatılamadı!");
 }
 finally
 {

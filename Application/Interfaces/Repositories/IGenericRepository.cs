@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using LibraryManagement.Application.DTOs.Common;
+using System.Linq.Expressions;
 
 namespace LibraryManagement.Application.Interfaces.Repositories
 {
@@ -13,9 +14,17 @@ namespace LibraryManagement.Application.Interfaces.Repositories
         void Remove(T entity);
         void RemoveRange(IEnumerable<T> entities);
        
-        // ✅ Soft Delete metodları
+        // Soft Delete metodları
         Task SoftDeleteAsync(T entity, int deletedBy);
         Task RestoreAsync(T entity);
         Task<IEnumerable<T>> GetDeletedAsync();
+
+        // Pagination
+        Task<PaginationResponse<T>> GetPagedAsync(
+            int page,
+            int pageSize,
+            Expression<Func<T, bool>>? filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
+        IQueryable<T> GetAll();
     }
 }

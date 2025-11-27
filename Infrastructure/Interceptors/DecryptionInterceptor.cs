@@ -1,21 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System;
 using Application.Interfaces.Services;
 using Domain.Entities;
 using LibraryManagement.Application.Interfaces.Services;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Interceptors
 {
     public class DecryptionInterceptor : IMaterializationInterceptor
     {
         private readonly IEncryptionService _encryptionService;
+        private readonly ILogger<DecryptionInterceptor> _logger;
 
-        public DecryptionInterceptor(IEncryptionService encryptionService)
+        public DecryptionInterceptor(
+            IEncryptionService encryptionService,
+            ILogger<DecryptionInterceptor> logger)
         {
             _encryptionService = encryptionService;
+            _logger = logger;
         }
 
         public object InitializedInstance(MaterializationInterceptionData materializationData, object entity)
@@ -37,29 +39,29 @@ namespace Infrastructure.Interceptors
 
         private void DecryptUser(User user)
         {
-            // ✅ Email şifresini çöz
-            if (!string.IsNullOrEmpty(user.Email))
+            user.Email = SafeDecrypt(user.Email, user.Id, "Email");
+            user.FullName = SafeDecrypt(user.FullName, user.Id, "FullName");
+            user.TwoFactorSecretKey = SafeDecrypt(user.TwoFactorSecretKey, user.Id, "TwoFactorSecretKey");
+            user.RefreshToken = SafeDecrypt(user.RefreshToken, user.Id, "RefreshToken");
+        }
+
+        private string SafeDecrypt(string value, int userId, string fieldName)
+        {
+            // Email VE FullName'i çöz
+            if ((fieldName == "Email" || fieldName == "FullName") && !string.IsNullOrEmpty(value))
             {
-                user.Email = _encryptionService.Decrypt(user.Email);
+                try
+                {
+                    return _encryptionService.Decrypt(value);
+                }
+                catch
+                {
+                    return value; // Çözülemezse olduğu gibi döndür
+                }
             }
 
-            // ✅ FullName şifresini çöz
-            if (!string.IsNullOrEmpty(user.FullName))
-            {
-                user.FullName = _encryptionService.Decrypt(user.FullName);
-            }
-
-            // ✅ TwoFactorSecretKey şifresini çöz
-            if (!string.IsNullOrEmpty(user.TwoFactorSecretKey))
-            {
-                user.TwoFactorSecretKey = _encryptionService.Decrypt(user.TwoFactorSecretKey);
-            }
-
-            // ✅ RefreshToken şifresini çöz
-            if (!string.IsNullOrEmpty(user.RefreshToken))
-            {
-                user.RefreshToken = _encryptionService.Decrypt(user.RefreshToken);
-            }
+            
+            return value;
         }
     }
 }

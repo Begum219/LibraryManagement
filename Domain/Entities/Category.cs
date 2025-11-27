@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+
 namespace Domain.Entities;
 
 public partial class Category : IEntity
@@ -17,12 +18,15 @@ public partial class Category : IEntity
 
     public bool? IsActive { get; set; }
 
-    public virtual ICollection<Book> Books { get; set; } = new List<Book>();
-
-    // ✅ SOFT DELETE - BUNLAR VAR MI KONTROL ET
     public Guid PublicId { get; set; }
+
     public bool IsDeleted { get; set; }
+
     public DateTime? DeletedDate { get; set; }
+
     public int? DeletedBy { get; set; }
-    
+
+    public byte[] RowVersion { get; set; } = null!;
+
+    public virtual ICollection<Book> Books { get; set; } = new List<Book>();
 }

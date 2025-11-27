@@ -49,12 +49,32 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
+       
+
+        // Gecikmiş ve henüz iade edilmemiş kitapları getir
         public async Task<IEnumerable<Loan>> GetOverdueLoansAsync()
         {
             return await _context.Loans
                 .Include(l => l.User)
                 .Include(l => l.Book)
-                .Where(l => l.IsReturned == false && l.DueDate < DateTime.Now)
+                .Where(l => l.IsActive == true && l.IsReturned == false  && l.DueDate < DateTime.Now)
+                    
+                    
+                .ToListAsync();
+        }
+
+        // Yaklaşan iade tarihi olan kitapları getir (opsiyonel - erken uyarı için)
+        public async Task<IEnumerable<Loan>> GetLoansWithUpcomingDueDateAsync(int daysBeforeDue)
+        {
+            var targetDate = DateTime.Now.AddDays(daysBeforeDue);
+
+            return await _context.Loans
+                .Include(l => l.User)
+                .Include(l => l.Book)
+                .Where(l => l.IsActive == true
+                    && l.IsReturned == false
+                    && l.DueDate <= targetDate
+                    && l.DueDate > DateTime.Now)
                 .ToListAsync();
         }
     }
